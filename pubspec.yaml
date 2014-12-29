@@ -1,6 +1,6 @@
-name: barebones
+name: playground
 version: 0.0.1
-description: An absolute bare-bones web app.
+description: Playgorund for learning dart.
 environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
