@@ -10,7 +10,7 @@ PlaygroundRoute _routeElement;
 Router _router = new Router();
 
 class Route {
-    static final Route home      = new Route._create("home",    "/",         () => new Element.tag('playground-home'), isDefault : true);
+    static final Route home      = new Route._create("home",    "/home",     () => new Element.tag('playground-home'), isDefault : true);
     static final Route counter   = new Route._create("counter", "/counter",  () => new Element.tag('playground-counter'));
     
     static final List<Route> all = [home, counter];

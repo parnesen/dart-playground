@@ -3,9 +3,8 @@ import 'dart:html';
 
 @CustomTag('playground-counter')
 class PlaygroundCounter extends PolymerElement {
-    PlaygroundCounter.created() : super.created() {}
+    PlaygroundCounter.created() : super.created();
       
-    //@observable String content = "initial content";
     @observable int clickCount = 0;
     ButtonElement _incrementBtn, _decrementBtn;
     
