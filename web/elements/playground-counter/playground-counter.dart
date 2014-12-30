@@ -1,5 +1,6 @@
 import 'package:polymer/polymer.dart';
 import 'dart:html';
+import '../playground-route/playground-route.dart';
 
 @CustomTag('playground-counter')
 class PlaygroundCounter extends PolymerElement {
@@ -26,6 +27,8 @@ class PlaygroundCounter extends PolymerElement {
         clickCount--;
         _decrementBtn.text = "Decrement Again!";
     }
+    
+    void goHome() => Route.home.go();
 }
 
 
