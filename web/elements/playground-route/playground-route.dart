@@ -12,6 +12,8 @@ DivElement _routerDiv;
 
 class Route {
     
+    static Element _counterElement = null;
+    
     static final Route home = new Route._create(
             "home", 
             "/playground/home", 
