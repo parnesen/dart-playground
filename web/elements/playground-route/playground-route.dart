@@ -28,7 +28,7 @@ class Route {
     static final Route nest = new Route._create(
             "nest", 
             "/playground/nest", 
-            (RouteEvent) => _showElement(new Element.tag('nest-outer-level')));    
+            (RouteEvent) => _showElement(new Element.tag('nest-outer-level')));
     
     static final List<Route> all = [home, counter, nest];
     
