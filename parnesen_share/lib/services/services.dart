@@ -7,7 +7,11 @@ typedef T ServiceFactory<T>();
 //the global instance
 Services services = new Services();
 
+void main() {}
+
 class Services {
+    
+
     
     final Map<Type, _Struct> instances = {};
     
