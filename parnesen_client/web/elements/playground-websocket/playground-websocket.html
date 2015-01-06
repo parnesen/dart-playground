@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+
+<polymer-element name="playground-websocket">
+
+<template>
+  <div>[playground-websocket]</div> 
+  <div>connection state = '{{connectionState}}'</div>
+  <div>
+    <input id="input" type="text" placeholder="input" value="{{inputString}}" autofocus=true>
+    <button id="submit" on-click="{{submit}}">Submit</button>
+  </div>
+  <div>Result: '{{outputString}}'</div>
+  <div><button id="home" on-click="{{goHome}}">Home</button> <button id="home" on-click="{{clear}}">Clear</button></div>
+  <div id="results"></div>
+</template>
+
+<script type="application/dart" src="playground-websocket.dart"></script>
+
+</polymer-element>

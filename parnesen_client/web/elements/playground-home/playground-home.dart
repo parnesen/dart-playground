@@ -9,8 +9,9 @@ class PlaygroundHome extends PolymerElement {
         print("playground-home attached");
     }
     
-    void goCounter() => Route.counter   .go();
-    void goNest()    => Route.nest      .go();
+    void goCounter()   => Route.counter  .go();
+    void goNest()      => Route.nest     .go();
+    void goWebSocket() => Route.websocket.go();
 }
 
 

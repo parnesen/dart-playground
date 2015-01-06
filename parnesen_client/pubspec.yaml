@@ -6,14 +6,9 @@ environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
   browser: any
-  parnesen_share:
-    path: ../parnesen_share
   polymer: any
   quiver: any
   route_hierarchical: any
 transformers:
-- $dart2js:
-    commandLineOptions:
-    - --enable-enums
 - polymer:
     entry_points: web/index.html

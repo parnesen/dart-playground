@@ -1,7 +1,6 @@
 import 'package:polymer/polymer.dart';
 import 'dart:html';
 import '../playground-route/playground-route.dart';
-import 'package:parnesen_share/services/example-service.dart';
 
 @CustomTag('playground-counter')
 class PlaygroundCounter extends PolymerElement {
@@ -20,10 +19,7 @@ class PlaygroundCounter extends PolymerElement {
     //wired up from the html template
     void increment() {
         clickCount++;
-        _incrementBtn.text = "Increment Again!";
-        
-        ExampleService exampleService = ExampleService.instance();
-        print(exampleService);
+        _incrementBtn.text = "Increment Again!";     
     }
     
     //wired up from the attached() method using an event subscription

@@ -30,7 +30,12 @@ class Route {
             "/playground/nest", 
             (RouteEvent) => _showElement(new Element.tag('nest-outer-level')));
     
-    static final List<Route> all = [home, counter, nest];
+    static final Route websocket = new Route._create(
+            "websocket", 
+            "/playground/websocket", 
+            (RouteEvent) => _showElement(new Element.tag('playground-websocket')));    
+    
+    static final List<Route> all = [home, counter, nest, websocket];
     
     String name, path;
     bool isDefault;
