@@ -69,7 +69,15 @@ class Services {
     }
 }
 
-enum State { uninstantiated, instantiating, instantiated }
+//poor man's enum
+class State { 
+    static const State uninstantiated = const State._create("uninstantiated");
+    static const State instantiating  = const State._create("instantiating");
+    static const State instantiated   = const State._create("instantiated");
+    
+    final String name;
+    const State._create(this.name);
+}
 
 class _Struct {
     State state = State.uninstantiated;

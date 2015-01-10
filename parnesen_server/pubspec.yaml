@@ -5,6 +5,9 @@ environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
   http_server: any
+  parnesen_share:
+    path: ../parnesen_share
+  quiver: any
   route: any
   sqljocky: '>=0.11.0 <0.12.0'
 dev_dependencies:

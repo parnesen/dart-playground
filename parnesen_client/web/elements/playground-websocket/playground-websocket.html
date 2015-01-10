@@ -9,11 +9,13 @@
   <div>connection state = '{{connectionState}}'</div>
   <div>
     <input id="input" type="text" placeholder="input" value="{{inputString}}" autofocus=true>
-    <button id="submit" on-click="{{submit}}">Submit</button>
+    <button id="createUser" on-click="{{createUser}}">Submit</button>
+    <button id="post" on-click="{{post}}">Post</button>
   </div>
   <div>Result: '{{outputString}}'</div>
-  <div><button id="home" on-click="{{goHome}}">Home</button> <button id="home" on-click="{{clear}}">Clear</button></div>
-  <div id="results"></div>
+  <div>
+    <button id="goHome" on-click="{{goHome}}">goHome</button>
+  </div>
 </template>
 
 <script type="application/dart" src="playground-websocket.dart"></script>

@@ -5,16 +5,18 @@
 library playground_server;
 
 import 'dart:io';
-
 import 'package:http_server/http_server.dart' as http_server;
 import 'package:route/server.dart' show Router;
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import 'package:sqljocky/sqljocky.dart';
+import '../lib/mail_server.dart';
 
 
-final Logger log = new Logger('playgroundServer');
+final Logger log = new Logger('playground_server');
 
-final ConnectionPool db = new ConnectionPool(host: 'localhost', port: 3306, user: 'webserver', password: 'ruejoldy', db: 'team_status', max: 5);
+int sharedState = 1;
+
+//final ConnectionPool db = new ConnectionPool(host: 'localhost', port: 3306, user: 'webserver', password: 'ruejoldy', db: 'team_status', max: 5);
 
 /**
  * Handle an established [WebSocket] connection.
@@ -24,18 +26,13 @@ final ConnectionPool db = new ConnectionPool(host: 'localhost', port: 3306, user
  * message.
  */
 void handleWebSocket(WebSocket webSocket) {
-  log.info('New WebSocket connection');
+    log.info('New WebSocket connection');
 
-  // Listen for incoming data. We expect the data to be a JSON-encoded String.
-  webSocket
-    .listen((String request) {
-      print("Handling '$request'");
-      for(int ii = 0; ii < 3; ii++) {
-          webSocket.add(request.toUpperCase());
-      }
-    }, onError: (error) {
-      log.warning('Bad WebSocket request: $error');
-    });
+    Client client = new Client(webSocket);
+    
+    void onError(error) => log.warning('Bad WebSocket request: $error');
+    
+    webSocket.listen(client.onReceive, onError: onError);
 }
 
 void main() {
@@ -60,5 +57,5 @@ void main() {
 
   });
   
-  db.ping().then((_) => print("db connection established"));
+  //db.ping().then((_) => print("db connection established"));
 }
