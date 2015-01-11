@@ -5,18 +5,19 @@
 library playground_server;
 
 import 'dart:io';
-import 'package:http_server/http_server.dart' as http_server;
 import 'package:route/server.dart' show Router;
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
-import 'package:sqljocky/sqljocky.dart';
-import '../lib/mail_server.dart';
+import 'package:parnesen_share/mail/mail_server.dart';
+import 'package:parnesen_share/messages/posts_messages.dart';
+import 'package:parnesen_share/messages/user_messages.dart';
+import '../lib/posts_request_handlers.dart';
+import '../lib/user_request_handlers.dart';
+import '../lib/db_connection.dart';
 
 
 final Logger log = new Logger('playground_server');
 
 int sharedState = 1;
-
-//final ConnectionPool db = new ConnectionPool(host: 'localhost', port: 3306, user: 'webserver', password: 'ruejoldy', db: 'team_status', max: 5);
 
 /**
  * Handle an established [WebSocket] connection.
@@ -43,6 +44,13 @@ void main() {
   });
 
   int port = 9250;
+  
+  registerPostsMessages();
+  registerUserMessages();
+  registerPostsRequestHandlers();
+  registerUserRequestHandlers();
+  
+  connectDB();
 
   HttpServer.bind(InternetAddress.LOOPBACK_IP_V4, port).then((server) {
     log.info("Websocket server is running on "
@@ -57,5 +65,5 @@ void main() {
 
   });
   
-  //db.ping().then((_) => print("db connection established"));
+
 }

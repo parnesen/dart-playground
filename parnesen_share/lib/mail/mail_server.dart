@@ -2,19 +2,18 @@ library mail_server;
 
 import 'dart:io';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
-import 'package:sqljocky/sqljocky.dart';
 import 'package:quiver/check.dart';
-import 'package:parnesen_share/messages/mail_share.dart';
+import 'mail_message.dart';
 import 'dart:convert';
 
 final Logger log = new Logger('mail_server');
 
-final Map<String, MessageHandler> messageHandlers = {
-    CreateUser.NAME : _createUser,
-    CreatePost.NAME : _createPost
-};
+typedef void RequestHandler(Client client, Message message);
 
 class Client {
+    
+    static final Map<String, RequestHandler> requestHandlers = {};
+    
     final WebSocket webSocket;
 
     Client(WebSocket webSocket) : this.webSocket = checkNotNull(webSocket);
@@ -30,7 +29,7 @@ class Client {
                 return;
             }
             
-            MessageHandler handler = messageHandlers[message.name];
+            RequestHandler handler = requestHandlers[message.name];
             if(handler == null) {
                 String errorMessage = "No MessageHandler registered for message of type ${message.name}";
                 log.warning(errorMessage);
@@ -40,8 +39,18 @@ class Client {
                 return;
             }
             
-            log.info("Handling Message ${message.json}");
-            handler(this, message);
+            try {
+                log.info("Handling Message $message");
+                handler(this, message);
+            }
+            catch(error, stacktrace) {
+                String msg = "RequestHandler for message '${message.name}' failed with error: $error";
+                print(msg);
+                print(stacktrace);
+                if(message is Request) {
+                    sendFail(message, msg);
+                }
+            }
         }
         catch(error, stacktrace) {
             log.warning("Error onReceive", error, stacktrace);
@@ -51,7 +60,7 @@ class Client {
     }
     
     void send(Message message) {
-        log.info("Sending Message ${message.json}");
+        log.info("Sending Message $message");
         String str = JSON.encode(message.json); 
         webSocket.add(str);
     }
@@ -60,14 +69,13 @@ class Client {
     void sendFail   (Request request, [String errorMessage]) => send(new Fail.fromRequest(request, errorMessage));
 }
 
-typedef void MessageHandler(Client client, Message message);
 
-void _createUser(Client client, CreateUser request) {
-    client.sendSuccess(request, "user ${request.userId} created");
-}
-
-void _createPost(Client client, CreatePost request) {
-    Post post = request.post;
-    client.sendSuccess(request, "post with text ${post.text} created");
-}
+//void _createUser(Client client, CreateUser request) {
+//    client.sendSuccess(request, "user ${request.userId} created");
+//}
+//
+//void _createPost(Client client, CreatePost request) {
+//    Post post = request.post;
+//    client.sendSuccess(request, "post with text ${post.text} created");
+//}
 

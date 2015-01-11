@@ -1,11 +1,10 @@
 library mail_client;
 
-import 'package:quiver/check.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import 'client_websocket_controller.dart';
-import 'package:parnesen_share/messages/mail_share.dart';
+import 'mail_message.dart';
 
 /**
  * A simple Postoffice/Mailbox model for communicating to the server via json-based messages
@@ -28,7 +27,6 @@ class PostOffice {
     Stream<Message> get broadcastStream => _broadcastController.stream;
     
     PostOffice._create() {
-        webSocketController.open();
         webSocketController.stream.listen(_handleMessage);
     }
     

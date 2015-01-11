@@ -2,13 +2,19 @@ import 'dart:html';
 import 'dart:async';
 import 'package:polymer/polymer.dart';
 import '../playground-route/playground-route.dart';
-import '../../services/client_websocket_controller.dart';
-import '../../services/mail_client.dart';
-import 'package:parnesen_share/messages/mail_share.dart';
+import 'package:parnesen_share/mail/client_websocket_controller.dart';
+import 'package:parnesen_share/mail/mail_client.dart';
+import 'package:parnesen_share/mail/mail_message.dart';
+import 'package:parnesen_share/messages/user_messages.dart';
+import 'package:parnesen_share/messages/posts_messages.dart';
 
 @CustomTag('playground-websocket')
 class PlaygroundHome extends PolymerElement {
-    PlaygroundHome.created() : super.created();
+    
+    PlaygroundHome.created() : super.created() {
+        registerUserMessages();
+        registerPostsMessages();
+    }
     
     @observable State connectionState = webSocketController.state;
     @observable String outputString = "";
@@ -40,7 +46,7 @@ class PlaygroundHome extends PolymerElement {
             connectionState = transition.newState;
         });
           
-        
+        webSocketController.open();
     }
     
     void createUser() {
@@ -52,7 +58,7 @@ class PlaygroundHome extends PolymerElement {
                 outputString = reply.errorMessage;
             }
             else {
-                outputString = "unexpected reply: ${reply.name}";
+                outputString = "unexpected reply: ${reply}";
             }
         });
         
@@ -69,7 +75,7 @@ class PlaygroundHome extends PolymerElement {
                 outputString = reply.errorMessage;
             }
             else {
-                outputString = "unexpected reply: ${reply.name}";
+                outputString = "unexpected reply: ${reply}";
             }
         });
     }
