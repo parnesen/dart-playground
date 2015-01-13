@@ -1,6 +1,6 @@
 library posts_messages;
 
-import '../mail/mail_message.dart';
+import '../mail/mail_share.dart';
 import 'package:quiver/check.dart';
 
 void registerPostsMessages() {
@@ -9,8 +9,8 @@ void registerPostsMessages() {
     });
 }
 
-class CreatePost extends Request {
-    static final String NAME = "CreatePost";
+class CreatePost extends Message {
+    static const String NAME = "CreatePost";
     
     final Post post;
     
@@ -18,7 +18,7 @@ class CreatePost extends Request {
         super.fromJson(json), 
         post = new Post.fromJson(checkNotNull(json['post']));
     
-    CreatePost(Post post) : super(NAME), post = post {
+    CreatePost(Post post) : super(name : NAME), post = post {
         json['post'] = post.json;
     }
 }

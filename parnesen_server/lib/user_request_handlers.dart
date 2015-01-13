@@ -9,11 +9,11 @@ final Logger log = new Logger('user_request_handlers');
 
 void registerUserRequestHandlers() {
     Client.requestHandlers.addAll({
-        CreateUser.NAME: _createUser,
+        CreateUserRequest.NAME: _createUser,
     });
 }
 
-void _createUser(final Client client, final CreateUser request) {
+void _createUser(final Client client, final CreateUserRequest request) {
     
     String sql =    "INSERT INTO user(userid, password)"
                     "VALUES('${request.userId}', '${request.password}')";

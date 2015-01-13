@@ -1,20 +1,20 @@
 library user_messages;
 
-import '../mail/mail_message.dart';
+import '../mail/mail_share.dart';
 import 'package:quiver/check.dart';
 
 void registerUserMessages() {
     Message.factories.addAll({
-        Login.NAME          : (json) => new Login.fromJson(json),
-        CreateUser.NAME     : (json) => new CreateUser.fromJson(json),
+        LoginRequest.NAME          : (json) => new LoginRequest.fromJson(json),
+        CreateUserRequest.NAME     : (json) => new CreateUserRequest.fromJson(json),
     });
 }
 
-class Login extends Request {
-    static final String NAME = "Login";
-    Login.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+class LoginRequest extends Message {
+    static const String NAME = "Login";
+    LoginRequest.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
-    Login(String userId, String password) : super(NAME) {
+    LoginRequest(String userId, String password) : super(name : NAME) {
         json['userId']   = checkNotNull(userId);
         json['password'] = checkNotNull(password);
     }
@@ -24,14 +24,14 @@ class Login extends Request {
 }
 
 /** server replies with either Success or Fail **/
-class CreateUser extends Request {
-    static final String NAME = "CreateUser";
-    CreateUser.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+class CreateUserRequest extends Message {
+    static const String NAME = "CreateUser";
+    CreateUserRequest.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
-    CreateUser(String userId, String password) : super(NAME) {
+    CreateUserRequest(String userId, String password) : super(name : NAME) {
         json['userId']   = checkNotNull(userId);
         json['password'] = checkNotNull(password);
-    } 
+    }
     
     String get userId => json['userId'];
     String get password => json['password'];

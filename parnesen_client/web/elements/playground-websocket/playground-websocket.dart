@@ -4,7 +4,7 @@ import 'package:polymer/polymer.dart';
 import '../playground-route/playground-route.dart';
 import 'package:parnesen_share/mail/client_websocket_controller.dart';
 import 'package:parnesen_share/mail/mail_client.dart';
-import 'package:parnesen_share/mail/mail_message.dart';
+import 'package:parnesen_share/mail/mail_share.dart';
 import 'package:parnesen_share/messages/user_messages.dart';
 import 'package:parnesen_share/messages/posts_messages.dart';
 
@@ -50,34 +50,18 @@ class PlaygroundHome extends PolymerElement {
     }
     
     void createUser() {
-        mailbox.request(new CreateUser(inputString, "password")).then((Reply reply){
-            if(reply is Success) {
-                outputString = reply.message;
-            }
-            else if(reply is Fail) {
-                outputString = reply.errorMessage;
-            }
-            else {
-                outputString = "unexpected reply: ${reply}";
-            }
-        });
-        
         print("createUser $inputString");
+        CreateUserRequest createUser = new CreateUserRequest(inputString, "password");
+        mailbox.sendRequest(createUser).single.then(
+            (Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
     }
     
-    void post() {
+    void submitPost() {
+        print("submitPost $inputString");
+        
         Post post = new Post("user1", inputString);
-        mailbox.request(new CreatePost(post)).then((Reply reply) {
-            if(reply is Success) {
-                outputString = reply.message;
-            }
-            else if(reply is Fail) {
-                outputString = reply.errorMessage;
-            }
-            else {
-                outputString = "unexpected reply: ${reply}";
-            }
-        });
+        mailbox.sendRequest(new CreatePost(post)).single.then(
+            (Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
     }
     
     void goHome() => Route.home.go();

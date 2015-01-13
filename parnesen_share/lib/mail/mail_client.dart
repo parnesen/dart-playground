@@ -4,7 +4,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import 'client_websocket_controller.dart';
-import 'mail_message.dart';
+import 'mail_share.dart';
+import 'package:quiver/check.dart';
 
 /**
  * A simple Postoffice/Mailbox model for communicating to the server via json-based messages
@@ -38,7 +39,7 @@ class PostOffice {
     }
     
     void _handleMessage(String jsonString) {
-        Message message = new Message.fromString(jsonString);
+        Message message = jsonToMessage(JSON.decode(jsonString));
         if(message.mailboxId == null) {
             _broadcastController.add(message);
             return;
@@ -57,78 +58,85 @@ class PostOffice {
 class Mailbox {
     
     /** open requests awaiting a reply from the server **/
-    final Map<int, Completer<Reply>> _completers = {}; 
-    final StreamController<Message> _streamController = new StreamController.broadcast();
+    final Map<int, StreamController<Message>> _requestStreams = {};
+    
+    /** stream for incomming messages directed at this mailbox in general but not in response to a particular request **/
+    final StreamController<Message> _mailboxStream = new StreamController.broadcast();
     final int id;
     Mailbox._create(int id) : this.id = id;
     
-    /** messages streamed to this mailbox that are not a direct reply to a request **/
-    Stream<Message> get stream => _streamController.stream;
+    /** messages streamed to this mailbox that are not replies to a request **/
+    Stream<Message> get stream => _mailboxStream.stream;
     
-    /** Send a request that triggers an asynchronous reply from the server **/
-    Future<Reply> request(Request request) {
+    /** 
+     * Send a request that triggers an asynchronous reply from the server 
+     * Returns a Stream that will close when a Message marked isFinal=true is received from the server.
+     * All server-generated error messages are treated as normal messages by the stream. 
+     * For Stream errors, see subclasses of [RequestStreamError]
+     **/
+    Stream<Message> sendRequest(Message request) {
+        checkState(request.requestId == null);
+        checkState(request.isFinal == false);
+        checkState(request.result == Result.Unspecified);
+  
         final int requestId = ++_requestCounter;
         request.json['requestId'] = requestId;
         
-        send(request);
+        StreamController<Message> streamController = new StreamController()
+            ..done.then((_) => _requestStreams.remove(requestId));
+        _requestStreams[requestId] = streamController;
         
-        Completer<Reply> completer = new Completer();
-        _completers[requestId] = completer;
-        return completer.future;
+        send(request);
+        return streamController.stream;
     }
     
-    /** send a message to the server that will not generate a reply **/
+    /** Send a message to the server that will not generate a reply **/
     void send(Message message) {
+        checkState(message.mailboxId == null || message.mailboxId == id);
         message.json['mailboxId'] = id;
         webSocketController.send(JSON.encode(message.json));
     }
     
-    void dispose() {
-        postOffice._clientMailboxes.remove(id);
-        for(Completer<Reply> completer in _completers.values) {
-            completer.completeError("Mailbox was disposed");
-        }
-        _completers.clear();
-        _streamController.close();
-    }
-    
     void _accept(Message message) {
-        if(message is Reply) {
-            _acceptReply(message);
+        int requestId = message.requestId;
+        if(requestId == null) {
+            _mailboxStream.add(message);
+            return;
         }
-        else {
-            _streamController.add(message);
+        
+        StreamController<Message> requestStream = 
+            message.isFinal  ? _requestStreams.remove(requestId) 
+                             : _requestStreams['requsetId'];
+                
+        if(requestStream == null) {
+            log.warning("Reply message received for which no reply Stream could be found: $message");
+            return;
+        }
+        
+        requestStream.add(message);
+        if(message.isFinal || message.isFail) {
+            requestStream.close();
         }
     }
    
-    /**
-     * a reply takes the shape of { name : 'reply', mailboxId : <int>, requestId : <int>, message : <json map>
-     **/
-    void _acceptReply(Reply reply) {
-        int requestId = reply.requestId;
-        Completer<Reply> completer = _completers.remove(requestId);
-        if(completer == null) {
-            log.warning("Response message received for which no completer could be found: $requestId, ${reply.requestName}");
-            return;
+    void dispose() {
+        postOffice._clientMailboxes.remove(id);
+        bool hadUnfinishedRequests = false;
+        _requestStreams.forEach((int requestId, StreamController stream) {
+            hadUnfinishedRequests = true;
+            stream.addError(new StreamDisposedError());
+            stream.close();
+         });
+        
+        if(hadUnfinishedRequests) {
+            log.warning("Disposed Mailbox $id had unfinished requests");
         }
-        completer.complete(reply);
+        
+        _requestStreams.clear();
+        _mailboxStream.close();
     }
 }
 
-//class Message {
-//    Map<String, dynamic> _json;
-//    
-//    /** json must be a map and must contain the field 'name' **/
-//    Message(Map<String, dynamic> json) {
-//        _json = checkNotNull(json) as Map; 
-//    }
-//    
-//    Map<String, dynamic> get json => _json;
-//    
-//    String get name => json["name"];
-//    
-//    dynamic operator[](String fieldName) => json[fieldName];
-//    void    operator[]=(String fieldName, dynamic value) => json[fieldName] = value;
-//}
-
-
+abstract class RequestStreamError { }
+class StreamDisposedError   extends RequestStreamError { } 
+class TimeoutError          extends RequestStreamError { }
