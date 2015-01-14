@@ -3,44 +3,30 @@ library mail_share;
 import 'package:quiver/check.dart';
 
 part 'mail_message.dart';
-part 'mail_value.dart';
 
+typedef JsonObject jsonObjectFactory(Map<String, dynamic> json);
 
 /** instantiates a message of the proper subtype, given the json passed in **/
-Message jsonToMessage(Map<String, dynamic> json) {
+JsonObject jsonToObj(Map<String, dynamic> json) {
     checkNotNull(json);
     String name = json["name"];
     checkState(name != null || name.isEmpty, message : "message is missing its name field");
-    messageFactory factory = Message.factories[name];
+    jsonObjectFactory factory = JsonObject.factories[name];
     checkState(factory != null, message : "Missing factory for message $name");
-    Message message = factory(json);
-    return message;
+    JsonObject obj = factory(json);
+    return obj;
 }
 
-class GenericSuccess extends Message {
-    static const String NAME = "GenericSuccess";
+abstract class JsonObject {
     
-    GenericSuccess.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    static final Map<String, jsonObjectFactory> factories = {
+          Message.NAME        : (json) => new Message.fromJson(json),
+          GenericSuccess.NAME : (json) => new GenericSuccess.fromJson(json),
+          GenericFail.NAME    : (json) => new GenericFail.fromJson(json),
+    };
     
-    GenericSuccess(Message request, { String comment } ) : super(
-            name : NAME, 
-            requestId : checkNotNull(request.requestId),
-            mailboxId : checkNotNull(request.mailboxId),
-            result : Result.Success,
-            isFinal : true,
-            comment : comment);
-}
-
-class GenericFail extends Message {
-    static const String NAME = "GenericFail";
+    /** the underlying json contains all of the message's (and it's subclass') state **/
+    final Map<String, dynamic> json;
     
-    GenericFail.fromJson(Map<String, dynamic> json) : super.fromJson(json);
-    
-    GenericFail(Message request, { String errorMsg } ) : super(
-            name : NAME, 
-            requestId : checkNotNull(request.requestId),
-            mailboxId : checkNotNull(request.mailboxId),
-            result : Result.Fail,
-            isFinal : true,
-            comment : errorMsg);
+    JsonObject.fromJson(Map<String, dynamic> json) : this.json = json;
 }

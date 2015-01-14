@@ -4,8 +4,9 @@ import '../mail/mail_share.dart';
 import 'package:quiver/check.dart';
 
 void registerPostsMessages() {
-    Message.factories.addAll({
+    JsonObject.factories.addAll({
         CreatePost.NAME          : (json) => new CreatePost.fromJson(json),
+        Post.NAME                : (json) => new Post.fromJson(json),
     });
 }
 
@@ -23,7 +24,8 @@ class CreatePost extends Message {
     }
 }
 
-class Post extends Value {
+class Post extends JsonObject {
+    static const String NAME = "Post";
     
     Post.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     

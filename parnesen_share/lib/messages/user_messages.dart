@@ -4,7 +4,7 @@ import '../mail/mail_share.dart';
 import 'package:quiver/check.dart';
 
 void registerUserMessages() {
-    Message.factories.addAll({
+    JsonObject.factories.addAll({
         LoginRequest.NAME          : (json) => new LoginRequest.fromJson(json),
         CreateUserRequest.NAME     : (json) => new CreateUserRequest.fromJson(json),
     });

@@ -3,17 +3,25 @@ import 'dart:async';
 import 'package:polymer/polymer.dart';
 import '../playground-route/playground-route.dart';
 import 'package:parnesen_share/mail/client_websocket_controller.dart';
-import 'package:parnesen_share/mail/mail_client.dart';
+import 'package:parnesen_share/mail/comms_endpoint.dart';
 import 'package:parnesen_share/mail/mail_share.dart';
 import 'package:parnesen_share/messages/user_messages.dart';
 import 'package:parnesen_share/messages/posts_messages.dart';
 
+final CommsEndpoint server = new CommsEndpoint.clientSide(webSocketController);
+
 @CustomTag('playground-websocket')
 class PlaygroundHome extends PolymerElement {
     
+    static bool _isEndpointInitialized = false;
+    
     PlaygroundHome.created() : super.created() {
-        registerUserMessages();
-        registerPostsMessages();
+        if(!_isEndpointInitialized) {
+            registerUserMessages();
+            registerPostsMessages();
+            webSocketController.stream.listen(server.receive);
+            _isEndpointInitialized = true;
+        }
     }
     
     @observable State connectionState = webSocketController.state;
@@ -25,8 +33,6 @@ class PlaygroundHome extends PolymerElement {
     
     InputElement input;
     DivElement results;
-    
-    Mailbox mailbox = postOffice.createMailbox();
     
     void attached() {
         
@@ -52,7 +58,7 @@ class PlaygroundHome extends PolymerElement {
     void createUser() {
         print("createUser $inputString");
         CreateUserRequest createUser = new CreateUserRequest(inputString, "password");
-        mailbox.sendRequest(createUser).single.then(
+        server.send(createUser).then(
             (Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
     }
     
@@ -60,7 +66,7 @@ class PlaygroundHome extends PolymerElement {
         print("submitPost $inputString");
         
         Post post = new Post("user1", inputString);
-        mailbox.sendRequest(new CreatePost(post)).single.then(
+        server.send(new CreatePost(post)).then(
             (Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
     }
     

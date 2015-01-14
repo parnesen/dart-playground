@@ -1,40 +1,23 @@
 part of mail_share;
 
-typedef Message messageFactory(Map<String, dynamic> json);
 
-class Message {
+class Message extends JsonObject {
     
     static const String NAME = "Message";
     
-    static final Map<String, messageFactory> factories = {
-          Message.NAME        : (json) => new Message.fromJson(json),
-          GenericSuccess.NAME : (json) => new GenericSuccess.fromJson(json),
-          GenericFail.NAME    : (json) => new GenericFail.fromJson(json),
-    };
-    
-    /** the underlying json contains all of the message's (and it's subclass') state */
-    final Map<String, dynamic> json;
-    
-    Message.fromJson(Map<String, dynamic> json) : this.json = json;
+    Message.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
     Message({  String name     : NAME,
-               int mailboxId   : null, 
                int requestId   : null,
                Result result   : null,
                bool isFinal    : null,
                String comment  : null 
-            }) : json = {} {
+            }) : super.fromJson({}) {
         
         json['name'] = checkNotNull(name);
-        if(mailboxId != null) { json['mailboxId'] = mailboxId; }
-        if(requestId != null) { 
-            checkState(mailboxId != null, message : "'requestId' cannot be specified without a mailboxId");
-            json['requestId'] = requestId; 
-        }
-        if(result != null)    { 
-            checkState(requestId != null, message : "'result' cannot be specified without a mailboxId");
-            json['result']    = result.value; 
-        }
+        
+        if(requestId != null) { json['requestId'] = requestId; }
+        if(result != null)    { json['result']    = result.value; }
         if(isFinal != null)   { json['isFinal']   = isFinal; }
         if(comment != null)   { json['comment']   = comment; }
     }
@@ -44,9 +27,6 @@ class Message {
      * The name maps to a factory function used to deserialize a Message from json.
      */
     String get name => json['name'];
-    
-    /** the mailboxId of the client-side requestor */
-    int get mailboxId => json['mailboxId'];
     
     /** 
      * Set by the client on requests if it expects a reply. 
@@ -84,4 +64,30 @@ class Result {
         if(value > 0) { return Result.Success; }
         return Result.Fail;
     } 
+}
+
+class GenericSuccess extends Message {
+    static const String NAME = "GenericSuccess";
+    
+    GenericSuccess.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    
+    GenericSuccess(Message request, { String comment } ) : super(
+            name : NAME, 
+            requestId : checkNotNull(request.requestId),
+            result : Result.Success,
+            isFinal : true,
+            comment : comment);
+}
+
+class GenericFail extends Message {
+    static const String NAME = "GenericFail";
+    
+    GenericFail.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    
+    GenericFail(Message request, { String errorMsg } ) : super(
+            name : NAME, 
+            requestId : checkNotNull(request.requestId),
+            result : Result.Fail,
+            isFinal : true,
+            comment : errorMsg);
 }

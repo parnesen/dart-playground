@@ -7,7 +7,7 @@ library playground_server;
 import 'dart:io';
 import 'package:route/server.dart' show Router;
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
-import 'package:parnesen_share/mail/mail_server.dart';
+import 'package:parnesen_share/mail/comms_endpoint.dart';
 import 'package:parnesen_share/messages/posts_messages.dart';
 import 'package:parnesen_share/messages/user_messages.dart';
 import '../lib/posts_request_handlers.dart';
@@ -19,6 +19,12 @@ final Logger log = new Logger('playground_server');
 
 int sharedState = 1;
 
+class ServerWebsocketProxy extends WebSocketProxy {
+    WebSocket webSocket;
+    ServerWebsocketProxy(this.webSocket);
+    void send(data) => webSocket.add(data);
+}
+
 /**
  * Handle an established [WebSocket] connection.
  *
@@ -28,12 +34,8 @@ int sharedState = 1;
  */
 void handleWebSocket(WebSocket webSocket) {
     log.info('New WebSocket connection');
-
-    Client client = new Client(webSocket);
-    
-    void onError(error) => log.warning('Bad WebSocket request: $error');
-    
-    webSocket.listen(client.onReceive, onError: onError);
+    CommsEndpoint endpoint = new CommsEndpoint.serverSide(new ServerWebsocketProxy(webSocket));
+    webSocket.listen(endpoint.receive, onError: (error) => log.warning('Bad WebSocket request: $error'));
 }
 
 void main() {

@@ -3,6 +3,7 @@
   import 'dart:async';
   import 'dart:html';
   import 'package:quiver/check.dart';
+  import 'comms_endpoint.dart';
  
   
   final ClientWebsocketController webSocketController = new ClientWebsocketController._create();
@@ -13,7 +14,7 @@
   final State closingState  = new ClosingState  ._create();
   final State errorState    = new ErrorState    ._create();
     
-  class ClientWebsocketController {
+  class ClientWebsocketController extends WebSocketProxy {
       
       //PUBLIC API
       
@@ -216,4 +217,3 @@
             }
         }
     }
-  
