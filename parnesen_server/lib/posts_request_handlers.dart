@@ -6,16 +6,16 @@ import 'package:parnesen_share/messages/posts_messages.dart';
 
 void registerPostsRequestHandlers() {
     CommsEndpoint.requestHandlerFactories.addAll({
-        CreatePost.NAME : CreatePostHandler.factory
+        CreatePost.NAME : (CommsEndpoint endpoint, Message request) => new CreatePostHandler(endpoint, request.requestId)
     });
 }
 
 class CreatePostHandler extends RequestHandler {
-    static CreatePostHandler factory(CommsEndpoint endpoint, Message request) => new CreatePostHandler(endpoint, request.requestId);
+
     CreatePostHandler(CommsEndpoint endpoint, int requestId) : super(endpoint, requestId);
     
-    void accept(CreatePost request) {
+    void recieve(CreatePost request) {
         Post post = request.post;
-        sendSuccess(request, "post with text ${post.text} created");
+        sendSuccess("post with text ${post.text} created");
     }
 }

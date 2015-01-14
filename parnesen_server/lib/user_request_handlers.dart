@@ -10,25 +10,24 @@ final Logger log = new Logger('user_request_handlers');
 
 void registerUserRequestHandlers() {
     CommsEndpoint.requestHandlerFactories.addAll({
-        CreateUserRequest.NAME: CreateUserHandler.factory
+        CreateUserRequest.NAME: (CommsEndpoint endpoint, Message request) => new CreateUserHandler(endpoint, request.requestId)
     });
 }
 
 
 class CreateUserHandler extends RequestHandler {
-    static CreateUserHandler factory(CommsEndpoint endpoint, Message request) => new CreateUserHandler(endpoint, request.requestId);
     CreateUserHandler(CommsEndpoint endpoint, int requestId) : super(endpoint, requestId);
     
-    void accept(CreateUserRequest request) {
+    void recieve(CreateUserRequest request) {
         String sql =    "INSERT INTO user(userid, password)"
                         "VALUES('${request.userId}', '${request.password}')";
              
         db.query(sql)
-            .then((_) => sendSuccess(request, "user ${request.userId} created"))
+            .then((_) => sendSuccess("user ${request.userId} created"))
             .catchError((e) {
                 String msg = "create user failed: $e";
                 log.warning(msg);
-                sendFail(request, msg);
+                sendFail(msg);
             });
     }
 }

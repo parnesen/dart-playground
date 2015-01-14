@@ -18,17 +18,7 @@ abstract class WebSocketProxy {
     void send(data);
 }
 
-//class EndpointSide {
-//    static const EndpointSide client = const EndpointSide._create("client");
-//    static const EndpointSide server = const EndpointSide._create("server");
-//    
-//    final String side;
-//    const EndpointSide._create(String side) : side = side;
-//    String toString() => "EndpointSide[$side]";
-//}
-
 typedef RequestHandler RequestHandlerFactory(CommsEndpoint endpoint, Message request);
-
 
 class CommsEndpoint {
     
@@ -61,15 +51,22 @@ class CommsEndpoint {
         : isClientSide = false
         , webSocketProxy = checkNotNull(webSocketProxy);
     
+    /** 
+     * sends a single request to the remote [CommsEndpoint] and returns a future for the single expected reply.
+     * Use this method for simple single-request/single-reply interop. 
+     * 
+     * For more complex client-server interop use the [newRequest] method to create
+     * a [Request] object through which multiple messages can be sent or received.
+     **/
+    Future<Message> send(Message message) => newRequest().send(message).single;    
+    
     Request newRequest() {
         int requestId = isClientSide ? ++_requestCounter : --_requestCounter;
         Request request = new Request._create(this, requestId);
         _requests[requestId] = request;
         return request;
     }
-    
-    bool isRequestOriginatedHere(int messageRequestId) => isClientSide ? messageRequestId > 0 : messageRequestId < 0;
-    
+
     void receive(String jsonString) {
         Message message;
         try {
@@ -82,20 +79,22 @@ class CommsEndpoint {
         
         int requestId = message.requestId;
         
-        void logAndSendError(Message message, String errorMessage) {
+        void logAndSendError(String errorMessage) {
             log.warning(errorMessage);
-            _send(new GenericFail(message, errorMsg: errorMessage)); 
+            GenericFail fail = new GenericFail(errorMessage);
+            fail.json['requestId'] = requestId;
+            _send(new GenericFail(errorMessage)); 
         }
                 
         if(isRequestOriginatedHere(requestId)) {
             Request request = _requests[requestId];
             if(request == null) {
-                logAndSendError(message, "No Request instance could be found for message $message");
+                logAndSendError("No Request instance could be found for message $message");
             }
             log.info("Handling Message $message");
             
             log.info("Request instance receiving message $message");
-            request._accept(message);
+            request._recieve(message);
         }
         else {
             RequestHandler handler;
@@ -105,7 +104,7 @@ class CommsEndpoint {
                 _lastHandledRequest = requestId;
                 RequestHandlerFactory factory = requestHandlerFactories[message.name];
                 if(factory == null) {
-                    logAndSendError(message, "$this: No RequestHandlerFactory registered for message of type ${message.name}");                   
+                    logAndSendError("$this: No RequestHandlerFactory registered for message of type ${message.name}");                   
                     return;
                 }
                 handler = factory(this, message);
@@ -114,40 +113,34 @@ class CommsEndpoint {
             else {
                 handler = _requestHandlers[requestId];
                 if(handler == null) {
-                    logAndSendError(message, "$this recieved a message for which the requestHandler has expired: ${message.name}");
+                    logAndSendError("$this recieved a message for which the requestHandler has expired: ${message.name}");
                     return;
                 }
             }
             
             log.info("RequestHandler receiving message $message");
-            handler.accept(message);
+            handler.recieve(message);
         }
     }
     
-    /** 
-     * sends a single request to the remote [CommsEndpoint] and returns a future for the single expected reply.
-     * Use this method for simple single-request/single-reply interop. 
-     * 
-     * For more complex client-server interop use the [newRequest] method to create
-     * a [Request] object through which multiple messages can be sent or received.
-     **/
-    Future<Message> send(Message message) => newRequest().send(message).single;
+    bool isRequestOriginatedHere(int messageRequestId) => isClientSide ? messageRequestId > 0 : messageRequestId < 0;    
+    
+    String toString() => "CommsEndpoint[${isClientSide ? "ClientSide" : "ServerSide"}]";
     
     /** Internal method used by [Request] and [RequestHandler] to send fully prepared messages to the remote [CommsEndpoint]**/
     void _send(Message message) {
         log.info("Sending Message $message");
+        checkState(message.requestId != null);
         String str = JSON.encode(message.json); 
         webSocketProxy.send(str);
     }
-    
-    String toString() => "CommsEndpoint[${isClientSide ? "ClientSide" : "ServerSide"}]";
 }
 
 /** represents a request that was started from this side of the CommsEndpoint **/
 class Request {
     
-    final int id;
     final CommsEndpoint endpoint;
+    final int id;
     final StreamController<Message> _streamController = new StreamController();
     
     /** stream of messages ariving from the remote [CommsEndoint] **/
@@ -183,7 +176,7 @@ class Request {
         _streamController.close();
     }
     
-    void _accept(Message message) {
+    void _recieve(Message message) {
         
         _streamController.add(message);
         
@@ -202,23 +195,25 @@ class Request {
 abstract class RequestHandler {
     
     final CommsEndpoint endpoint;
+    
+    /** ID of the [Request] at the remote [CommsEndpoint] that started this conversation **/
     final int requestId;
     
     RequestHandler(CommsEndpoint endpoint, int requestId) 
         : endpoint = checkNotNull(endpoint)
         , requestId = checkNotNull(requestId);
     
-    void accept(Message message);
+    void recieve(Message message);
     
     /** sends a generic, final success message **/
-    void sendSuccess(Message request, [String comment] ) => endpoint._send(new GenericSuccess(request, comment : comment));
+    void sendSuccess([String comment] ) => send(new GenericSuccess(comment));
     
     /** sends a generic, final error message **/
-    void sendFail   (Message request, [String errorMsg]) => endpoint._send(new GenericFail(request, errorMsg : errorMsg));
+    void sendFail ([String errorMsg]) => send(new GenericFail(errorMsg));
     
     /** Configures the given [response] message as a reply to the given [request] and sends it **/
-    void send(Message request, Message response, { bool isFinal : true, Result result : null, String comment : null }) {        
-        response.json['requestId'] = request.requestId;
+    void send(Message response, { bool isFinal : true, Result result : null, String comment : null }) {        
+        response.json['requestId'] = requestId;
         response.json['isFinal'] = isFinal;
         
         if(result  != null) { response.json['result'] = result;   }

@@ -71,9 +71,8 @@ class GenericSuccess extends Message {
     
     GenericSuccess.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
-    GenericSuccess(Message request, { String comment } ) : super(
+    GenericSuccess([String comment]) : super(
             name : NAME, 
-            requestId : checkNotNull(request.requestId),
             result : Result.Success,
             isFinal : true,
             comment : comment);
@@ -84,9 +83,8 @@ class GenericFail extends Message {
     
     GenericFail.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
-    GenericFail(Message request, { String errorMsg } ) : super(
-            name : NAME, 
-            requestId : checkNotNull(request.requestId),
+    GenericFail([String errorMsg]) : super(
+            name : NAME,
             result : Result.Fail,
             isFinal : true,
             comment : errorMsg);

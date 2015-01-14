@@ -13,7 +13,7 @@ void registerRequestHandlers() {
 class CollectionHandler extends RequestHandler {
     CollectionHandler(CommsEndpoint endpoint, int requestId) : super(endpoint, requestId);
     
-    void accept(Message request) {
+    void recieve(Message request) {
         
     }
 }
