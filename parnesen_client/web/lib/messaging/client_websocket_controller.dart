@@ -3,18 +3,16 @@
   import 'dart:async';
   import 'dart:html';
   import 'package:quiver/check.dart';
-  import 'comms_endpoint.dart';
- 
   
-  final ClientWebsocketController webSocketController = new ClientWebsocketController._create();
-  
-  final State closedState   = new ClosedState   ._create();
-  final State openingState  = new OpeningState  ._create();
-  final State openState     = new OpenState     ._create();
-  final State closingState  = new ClosingState  ._create();
-  final State errorState    = new ErrorState    ._create();
+
     
-  class ClientWebsocketController extends WebSocketProxy {
+  class ClientWebsocketController {
+      
+      State closedState;
+      State openingState;
+      State openState;
+      State closingState;
+      State errorState;
       
       //PUBLIC API
       
@@ -37,18 +35,29 @@
       State _goal;
       Completer<State> completer = new Completer();
       
-      ClientWebsocketController._create();
-      State _state = closedState;
+      State _state;
       WebSocket _webSocket;
       final StreamController<String> _streamController = new StreamController.broadcast();
       final StreamController<StateTransition> _stateTransitionController = new StreamController.broadcast();
+      
+      ClientWebsocketController() {
+          closedState   = new ClosedState   ._create(this);
+          openingState  = new OpeningState  ._create(this);
+          openState     = new OpenState     ._create(this);
+          closingState  = new ClosingState  ._create(this);
+          errorState    = new ErrorState    ._create(this);
+          
+          _state = closedState;
+      }
     }
   
   typedef void _handleStateEntry();
   
   abstract class State {
       
-      ClientWebsocketController get client => webSocketController;
+      final ClientWebsocketController client;
+      
+      State(ClientWebsocketController client) : client = client;
       
       WebSocket get webSocket => client.webSocket;
       
@@ -108,9 +117,9 @@
     }
   
     class ClosedState extends State {
-        ClosedState._create();
+        ClosedState._create(ClientWebsocketController client) : super(client);
         
-        Future<State> _open()  => openingState._set();
+        Future<State> _open()  => client.openingState._set();
         Future<State> _close() => new Future(() {});
 
         void _onEnter() {
@@ -121,23 +130,23 @@
     }
   
     class OpeningState extends State {
-        OpeningState._create();
+        OpeningState._create(ClientWebsocketController client) : super(client);
         
         Future _open()  => _completer.future;
-        Future _close() => closingState._set();
+        Future _close() => client.closingState._set();
       
         void _onEnter() {
             checkState(client.webSocket == null);
-            client._goal = openState;
+            client._goal = client.openState;
             _reportNewState();
             String url = 'ws://${Uri.base.host}:9250/ws';
             print("creating Websocket: $url");
             WebSocket webSocket = new WebSocket(url);
             webSocket.onOpen.first.then((_) {
-                if(client._goal == openState) {
+                if(client._goal == client.openState) {
                     print("websocket open");
                     client._webSocket = webSocket;
-                    openState._set();
+                    client.openState._set();
                 }
                 else {
                     webSocket.close();
@@ -146,22 +155,22 @@
             
             webSocket.onError.first.then((ErrorEvent error) {
                 print(error.message);
-                if(client._goal == openState) {
-                    errorState._set();
+                if(client._goal == client.openState) {
+                    client.errorState._set();
                 }              
             });
         }
     }
     
     class OpenState extends State {
-        OpenState._create();
+        OpenState._create(ClientWebsocketController client) : super(client);
         
         Future _open()  => new Future(() {});
-        Future _close() => closingState._set();
+        Future _close() => client.closingState._set();
 
         void _onEnter() {
             checkState(webSocket != null);
-            checkState(client.state == openingState);
+            checkState(client.state == client.openingState);
             _endStateReached();
             webSocket.onMessage.listen((MessageEvent event) {
                 if(client.state == this) {
@@ -175,28 +184,28 @@
     }
     
     class ClosingState extends State {
-        ClosingState._create();
+        ClosingState._create(ClientWebsocketController client) : super(client);
         
-        Future _open()  => openingState._set();
+        Future _open()  => client.openingState._set();
         Future _close() => _completer.future;
 
         void _onEnter(){
             checkState(client._webSocket != null);
-            checkState(client.state == openingState || client.state == openState);
+            checkState(client.state == client.openingState || client.state == client.openState);
             
-            client._goal = closedState;
+            client._goal = client.closedState;
             _reportNewState();
             webSocket.onClose.first.then((_) {
-                if(client._goal == closedState) {
+                if(client._goal == client.closedState) {
                     client._webSocket = null;
-                    closedState._set();
+                    client.closedState._set();
                 }
             });
             webSocket.onError.first.then((ErrorEvent error) {
                 print(error.message);
-                if(client._goal == closedState) {
+                if(client._goal == client.closedState) {
                     client._webSocket = null;
-                    errorState._set();
+                    client.errorState._set();
                 }          
             });
             client._webSocket.close();
@@ -204,9 +213,9 @@
     }
     
     class ErrorState extends State {
-        ErrorState._create();
+        ErrorState._create(ClientWebsocketController client) : super(client);
         
-        Future _open()  => openingState._set();
+        Future _open()  => client.openingState._set();
         Future _close() => new Future(() {});
 
         void _onEnter() {

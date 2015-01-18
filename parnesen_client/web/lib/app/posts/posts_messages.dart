@@ -1,6 +1,6 @@
 library posts_messages;
 
-import '../mail/mail_share.dart';
+import '../../messaging/messaging.dart';
 import 'package:quiver/check.dart';
 
 void registerPostsMessages() {
@@ -15,9 +15,9 @@ class CreatePost extends Message {
     
     final Post post;
     
-    CreatePost.fromJson(Map<String, dynamic> json) : 
-        super.fromJson(json), 
-        post = new Post.fromJson(checkNotNull(json['post']));
+    CreatePost.fromJson(Map<String, dynamic> json) 
+        : super.fromJson(json) 
+        , post = new Post.fromJson(checkNotNull(json['post']));
     
     CreatePost(Post post) : super(name : NAME), post = post {
         json['post'] = post.json;
@@ -29,13 +29,13 @@ class Post extends JsonObject {
     
     Post.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
-    Post(String userId, String text, {bool isImportant : false, bool isTask : false, bool isStrikethrough : false}) : this.fromJson({
-        'userId' : checkNotNull(userId),
-        'text' : text != null ? text : "",
-        'isImporant' : isImportant,
-        'isTask' : isTask,
-        'isStrikethrough' : isStrikethrough,
-    });
+    Post(String userId, String text, {bool isImportant : false, bool isTask : false, bool isStrikethrough : false}) : super(NAME) {
+        json['userId'] = checkNotNull(userId);
+        if(text != null) { json['text'] = text; }
+        json['isImportant'] = isImportant;
+        json['isTask'] = isTask;
+        json['isStrikethrough'] = isStrikethrough;
+    }
     
     String get userId           => json['userId'];
     String get text             => json['text'];
