@@ -1,11 +1,11 @@
-library collection_service;
+library server_collection_service;
 
 import '../messaging/messaging.dart';
 import 'collection_messages.dart';
 import 'package:quiver/check.dart';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 
-final Logger log = new Logger('collection_service');
+final Logger log = new Logger('server_collection_service');
 
 final CollectionService collectionService = new CollectionService._create();
 

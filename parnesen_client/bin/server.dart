@@ -12,9 +12,10 @@ import '../web/lib/app/posts/posts_messages.dart';
 import '../web/lib/app/users/user_messages.dart';
 import '../web/lib/app/posts/posts_request_handlers.dart';
 import '../lib/db_connection.dart';
-import '../web/lib/collections/collection_service.dart';
+import '../web/lib/collections/server_collection_service.dart';
 import '../web/lib/app/users/user_collection.dart';
 import '../web/lib/collections/collection_messages.dart';
+import '../web/lib/util.dart';
 
 
 final Logger log = new Logger('playground_server');
@@ -38,6 +39,9 @@ void handleWebSocket(WebSocket webSocket) {
 }
 
 void main() {
+    
+    config['salt'] = "fl23Fkfj0fjdsiebw";
+    
     // Set up logger.
     Logger.root.level = Level.CONFIG;
     Logger.root.onRecord

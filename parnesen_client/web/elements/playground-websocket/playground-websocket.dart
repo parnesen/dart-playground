@@ -13,9 +13,9 @@ import '../../index.dart';
 final Logger log = new Logger('PlaygroundHome');
 
 @CustomTag('playground-websocket')
-class PlaygroundHome extends PolymerElement {
+class PlaygroundWebsocket extends PolymerElement {
     
-    PlaygroundHome.created() : super.created();
+    PlaygroundWebsocket.created() : super.created();
     
     @observable State connectionState = webSocketController.state;
     @observable String outputString = "";
@@ -58,7 +58,7 @@ class PlaygroundHome extends PolymerElement {
     }
     
     void createUser() {
-        User user = new User(inputString, "${inputString}_pwd");
+        User user = new User(inputString, "Patrick", "Arnesen", "Developer", "patrick.arnesen@gmail.com", unhashedPassword: "${inputString}_pwd");
         userExchange.sendRequest(new CreateValues([user]))
             .then((Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
     }

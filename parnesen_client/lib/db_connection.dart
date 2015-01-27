@@ -3,7 +3,7 @@ library db_connection;
 import 'package:sqljocky/sqljocky.dart';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 
-final Logger log = new Logger('playground_server');
+final Logger log = new Logger('db_connection');
 
 final ConnectionPool db = new ConnectionPool(
         host: 'localhost', 
@@ -15,6 +15,6 @@ final ConnectionPool db = new ConnectionPool(
 
 void connectDB() {
     db.ping()
-        .then((_) => print("db connection established"))
-        .catchError((e) => print("db connection failed: $e"));
+        .then((_) => log.info("db connection established"))
+        .catchError((e) => log.info("db connection failed: $e"));
 }

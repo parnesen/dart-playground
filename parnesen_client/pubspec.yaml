@@ -6,6 +6,7 @@ environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
   browser: any
+  crypto: any
   polymer: any
   quiver: any
   route: any

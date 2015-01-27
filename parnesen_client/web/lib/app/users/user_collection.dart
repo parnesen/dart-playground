@@ -2,17 +2,19 @@ library user_collection;
 
 import 'dart:async';
 import 'user_messages.dart';
-import '../../collections/collection_service.dart';
+import '../../collections/server_collection_service.dart';
 import '../../collections/collection_messages.dart';
 import '../../messaging/messaging.dart';
 import '../../../../lib/db_connection.dart';
 import 'package:sqljocky/sqljocky.dart';
 import 'dart:math';
-
+import '../../util.dart';
+import '../../sha1_hash.dart';
 
 class UserCollection extends Collection<String, User> {
-   
     
+    final Sha1Hash _hash = new Sha1Hash(salt : config['salt']);
+   
     static void init() {
         CollectionService.collectionFactories[userCollectionName] = () => new UserCollection();
     }
@@ -27,10 +29,15 @@ class UserCollection extends Collection<String, User> {
     
     void createValues(Request request, List<User> users) {
         
-        StringBuffer sql = new StringBuffer("INSERT INTO user(userid, password) VALUES ");
-        users.forEach((user) {
+        StringBuffer sql = new StringBuffer("INSERT INTO user(userid, firstname, lastname, role, email, password) VALUES ");
+        users.forEach((User user) {
+            if(!isSet(user.hashedPassword)) {
+                request.sendFail(errorMsg : "password missing for user ${user.userId}");
+                return;
+            }
             String comma = user == users.last ? '' : ',';
-            sql.write("('${user.userId}', '${user.password}')$comma");
+            String password = _hash[user.hashedPassword];
+            sql.write("('${user.userId}', '${user.firstName}', '${user.lastName}', '${user.role}', '${user.email}', '${_hash[user.hashedPassword]}')$comma");
         });
         
         db.query(sql.toString())
@@ -68,9 +75,29 @@ class UserCollection extends Collection<String, User> {
                 }
             ).toString();
         
-        StringBuffer sql = new StringBuffer("UPDATE users      SET password = CASE userid");
-        users.forEach((user) => sql.write("WHEN '${user.userId}' THEN '${user.password}'"));
-        sql.write("END     WHERE userid IN ($userIds)");
+        StringBuffer sql = new StringBuffer("UPDATE users");
+                
+        sql.write(" SET firstname = CASE userid");
+        users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${user.firstName}'"));
+        sql.write("END");
+        
+        sql.write(" SET lastname = CASE userid");
+        users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${user.lastName}'"));
+        sql.write("END");
+        
+        sql.write(" SET role = CASE userid");
+        users.forEach((user) => sql.write("WHEN '${user.userId}' THEN '${user.role}'"));
+        sql.write("END");
+        
+        sql.write(" SET email = CASE userid");
+        users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${user.email}'"));
+        sql.write("END");
+        
+        sql.write(" SET password = CASE userid");
+        users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${_hash[user.hashedPassword]}'"));
+        sql.write("END");
+        
+        sql.write(" WHERE userid IN ($userIds)");
         
         db.query(sql.toString())
             .then((_) {
@@ -101,14 +128,13 @@ class UserCollection extends Collection<String, User> {
     
     //TODO: this is extremely inefficient for large tables
     Future<List<User>> fetchUsers() {
-        String sql = "SELECT userid, password FROM user";
+        String sql = "SELECT userid, firstname, lastname, role, email FROM user";
         return db.query(sql).then((Results results) {
             List users = [];
             return results.forEach((Row row) {
-                User user = new User(row[0], row[1]);
+                User user = new User(row[0], row[1], row[2], row[3], row[4]);
                 users.add(user);
             }).then((_) => users);
         });
-    }
-    
+    }    
 }
