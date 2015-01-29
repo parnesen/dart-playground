@@ -19,7 +19,6 @@ class PlaygroundWebsocket extends PolymerElement {
     
     @observable State connectionState = webSocketController.state;
     @observable String outputString = "";
-    @observable String inputString = "";
     
     StreamSubscription<StateTransition> stateSubscription;
     
@@ -31,12 +30,9 @@ class PlaygroundWebsocket extends PolymerElement {
         
         log.info("playground-websocket attached");
         
-        input       = $['input'  ];
         userEvents  = $['userEvents'];
         
         bool isEnterKey(KeyboardEvent event) => event.keyCode == KeyCode.ENTER;
-        
-        input.onKeyPress.where(isEnterKey).listen((_) => createUser());
         
         stateSubscription = webSocketController.stateTransitions.listen((StateTransition transition) {
             connectionState = transition.newState;
@@ -47,26 +43,22 @@ class PlaygroundWebsocket extends PolymerElement {
                 .where((Message message) => isCollectionUpdate(message))
                 .listen(onUserCollectionMsg);
         
-        webSocketController.open().then((_) {
-            userExchange.sendRequest(new OpenCollection(userCollectionName, new Filter()))
-                .then((Message reply) => outputString = reply.isSuccess ? "UserCollection Open" : "Failed to open UserCollection: $reply");
-        });
+        webSocketController.open()
+            .then((_) {
+                userExchange.sendRequest(new OpenCollection(userCollectionName, new Filter()))
+                    .then((Result result) => outputString = result.isSuccess ? "UserCollection Open" : "Failed to open UserCollection: $result");
+            })
+            .catchError((error) => outputString = error);
     }
     
     void onUserCollectionMsg(Message update) {
         userEvents.children.add(new DivElement()..innerHtml = update.toString());
     }
     
-    void createUser() {
-        User user = new User(inputString, "Patrick", "Arnesen", "Developer", "patrick.arnesen@gmail.com", unhashedPassword: "${inputString}_pwd");
-        userExchange.sendRequest(new CreateValues([user]))
-            .then((Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
-    }
-    
     void submitPost() {
         Post post = new Post("user1", inputString);
-        comms.send(new CreatePost(post)).then(
-            (Message reply) => outputString = reply.isSuccess ? reply.comment : "request failed: ${reply}");
+        comms.sendRequest(new CreatePost(post))
+            .then((Result result) => outputString = result.isSuccess ? result.comment : "request failed: ${result}");
     }
     
     void goHome() => Route.home.go();

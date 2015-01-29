@@ -10,7 +10,7 @@ void registerPostsMessages() {
     });
 }
 
-class CreatePost extends Message {
+class CreatePost extends Request {
     static const String NAME = "CreatePost";
     
     final Post post;

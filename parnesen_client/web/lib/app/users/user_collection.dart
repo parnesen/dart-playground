@@ -21,18 +21,21 @@ class UserCollection extends Collection<String, User> {
     
     UserCollection() : super(userCollectionName);
     
-    void open(Request request, String collectionName, Filter filter, int fetchUpTo) {
+    void open(CollectionResponder responder, OpenCollection request, String collectionName, Filter filter, int fetchUpTo) {
         fetchUsers().then((List<User> users) {
-            request.send(new OpenCollectionSuccess(userCollectionName, users.length, users.sublist(0, min(fetchUpTo, users.length))));
+            responder.sendResult(request, new OpenCollectionSuccess(userCollectionName, users.length));
+            if(fetchUpTo > 0) {
+                responder.send(new ReadResult(0, users.sublist(0, min(fetchUpTo, users.length))));
+            }
         });
     }
     
-    void createValues(Request request, List<User> users) {
+    void createValues(CollectionResponder responder, CreateValues request, List<User> users) {
         
         StringBuffer sql = new StringBuffer("INSERT INTO user(userid, firstname, lastname, role, email, password) VALUES ");
         users.forEach((User user) {
             if(!isSet(user.hashedPassword)) {
-                request.sendFail(errorMsg : "password missing for user ${user.userId}");
+                responder.sendFail(request, errorMsg : "password missing for user ${user.userId}");
                 return;
             }
             String comma = user == users.last ? '' : ',';
@@ -42,22 +45,22 @@ class UserCollection extends Collection<String, User> {
         
         db.query(sql.toString())
             .then((_) {
-                request.sendSuccess(comment : users.length == 1 ? "user ${users.first.userId} created" : "${users.length} users created");
+                responder.sendSuccess(request, comment : users.length == 1 ? "user ${users.first.userId} created" : "${users.length} users created");
                 broadcast(new ValuesCreated(users));
             })
-            .catchError((e) => request.sendFail(errorMsg : "create user failed: $e"));
+            .catchError((e) => responder.sendFail(request, errorMsg : "create user failed: $e"));
     }
     
-    void readValues(Request request, int startIndex, int count) {
+    void readValues(CollectionResponder responder, ReadValues request, int startIndex, int count) {
         fetchUsers().then((List<User> users) {
-            request.send(new ReadResult(startIndex, 
+            responder.sendResult(request, new ReadResult(startIndex, 
                     startIndex < users.length 
                         ? users.sublist(startIndex, min(startIndex + count, users.length))
                         : []));
         });
     }
     
-    void updateValues(Request request, List<User> users) {
+    void updateValues(CollectionResponder responder, UpdateValues request, List<User> users) {
 //        UPDATE mytable
 //            SET myfield = CASE other_field
 //                WHEN 1 THEN 'value'
@@ -93,21 +96,17 @@ class UserCollection extends Collection<String, User> {
         users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${user.email}'"));
         sql.write("END");
         
-        sql.write(" SET password = CASE userid");
-        users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${_hash[user.hashedPassword]}'"));
-        sql.write("END");
-        
         sql.write(" WHERE userid IN ($userIds)");
         
         db.query(sql.toString())
             .then((_) {
-                request.sendSuccess();
+                responder.sendSuccess(request);
                 broadcast(new ValuesUpdated(users));
             })
-            .catchError((e) => request.sendFail(errorMsg : "update users failed: $e"));
+            .catchError((e) => responder.sendFail(request, errorMsg : "update users failed: $e"));
     }
     
-    void deleteValues(Request request, List<String> userIds) {
+    void deleteValues(CollectionResponder responder, DeleteValues request, List<String> userIds) {
         StringBuffer commaSerparatedUserIds = 
             userIds.fold(
                 new StringBuffer(), 
@@ -120,19 +119,19 @@ class UserCollection extends Collection<String, User> {
         String sql = "DELETE FROM user WHERE user in ($commaSerparatedUserIds)";
         db.query(sql)
             .then((_) {
-                request.sendSuccess();
+                responder.sendSuccess(request);
                 broadcast(new ValuesDeleted(userIds));
             })
-            .catchError((e) => request.sendFail(errorMsg : "delete users failed: $e"));
+            .catchError((e) => responder.sendFail(request, errorMsg : "delete users failed: $e"));
     }
     
     //TODO: this is extremely inefficient for large tables
     Future<List<User>> fetchUsers() {
-        String sql = "SELECT userid, firstname, lastname, role, email FROM user";
+        String sql = "SELECT userid, firstname, lastname, role, email, isadmin FROM user";
         return db.query(sql).then((Results results) {
             List users = [];
             return results.forEach((Row row) {
-                User user = new User(row[0], row[1], row[2], row[3], row[4]);
+                User user = new User(row[0], row[1], row[2], row[3], row[4], isAdmin : row[5] == 1);
                 users.add(user);
             }).then((_) => users);
         });

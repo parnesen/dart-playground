@@ -12,10 +12,10 @@ void registerPostsRequestHandlers() {
 class CreatePostHandler extends Responder {
 
     CreatePostHandler(CommsEndpoint endpoint, int exchangeId) : super(endpoint, exchangeId) {
-        requests.listen((Request<CreatePost> request) => recieve(request, request.message.post));
+        requests.listen((CreatePost request) => recieve(request, request.post));
     }
     
     void recieve(Request request, Post post) {
-        request.sendSuccess(comment : "post with text ${post.text} created");
+        sendSuccess(request, comment : "post with text ${post.text} created");
     }
 }

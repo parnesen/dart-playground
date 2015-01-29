@@ -4,6 +4,7 @@ import '../messaging/messaging.dart';
 import 'collection_messages.dart';
 import 'package:quiver/check.dart';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
+import 'dart:async';
 
 final Logger log = new Logger('server_collection_service');
 
@@ -41,10 +42,9 @@ class CollectionService {
 abstract class Collection<K, T> {
     
     final String collectionName;
+    final Set<CollectionResponder> responders = new Set();
     
     Collection(collectionName) : collectionName = checkNotNull(collectionName);
-    
-    Set<CollectionResponder> responders = new Set();
     
     CollectionResponder newResponder(CommsEndpoint endpoint, int exchangeId) {
         CollectionResponder responder = new CollectionResponder(this, endpoint, exchangeId);
@@ -53,11 +53,11 @@ abstract class Collection<K, T> {
         return responder;
     }
     
-    void open(Request request, String collectionName, Filter filter, int fetchUpTo);
-    void createValues(Request request, List<T> values);
-    void readValues(Request request, int startIndex, int count);
-    void updateValues(Request request, List<T> values);
-    void deleteValues(Request request, List<K> ids);
+    void open(CollectionResponder responder, OpenCollection request, String collectionName, Filter filter, int fetchUpTo);
+    void createValues(CollectionResponder responder, CreateValues request, List<T> values);
+    void readValues(CollectionResponder responder, ReadValues request, int startIndex, int count);
+    void updateValues(CollectionResponder responder, UpdateValues request, List<T> values);
+    void deleteValues(CollectionResponder responder, DeleteValues request, List<K> ids);
     
     void broadcast(Message message) {
         responders.forEach((responder) {
@@ -71,34 +71,49 @@ class CollectionResponder extends Responder {
     final Collection collection;
     Filter filter;
     
-    CollectionResponder(Collection collectionHandler, CommsEndpoint endpoint, int exchangeId) 
+    CollectionResponder(Collection collection, CommsEndpoint endpoint, int exchangeId) 
         : super(endpoint, exchangeId, isSingleReply : false) 
-        , collection = checkNotNull(collectionHandler) {
+        , collection = checkNotNull(collection) {
         
         this.requests.listen(onRequest);
     }
     
     void onRequest(Request request) {
-        Message message = request.message;
-        if(message is OpenCollection) {
-            this.filter = message.filter;
-            collection.open(request, message.collectionName, message.filter, message.fetchUpTo);
+        try {
+            if(request is OpenCollection) {
+                this.filter = request.filter;
+                collection.open(this, request, request.collectionName, request.filter, request.fetchUpTo);
+            }
+            else if (request is CreateValues) {
+                collection.createValues(this, request, request.values);
+            }        
+            else if (request is ReadValues) {
+                collection.readValues(this, request, request.startIndex, request.count);
+            }
+            else if(request is UpdateValues) {
+                collection.updateValues(this, request, request.values);
+            }        
+            else if(request is DeleteValues) {
+                collection.deleteValues(this, request, request.keys);
+            }
+            else {
+                log.warning("CollectionRequestHandler doesn't handle request ${request.name}");
+            }
         }
-        else if (message is CreateValues) {
-            collection.createValues(request, message.values);
-        }        
-        else if (message is ReadValues) {
-            collection.readValues(request, message.startIndex, message.count);
+        catch(error, stacktrace) {
+            String errorMsg = "unexpected error handling request: $error";
+            log.warning(errorMsg, error, stacktrace);
+            sendFail(request, errorMsg: errorMsg);
         }
-        else if(message is UpdateValues) {
-            collection.updateValues(request, message.values);
-        }        
-        else if(message is DeleteValues) {
-            collection.deleteValues(request, message.keys);
+    }
+    
+    /** Configures the given [message] message as a reply and sends it **/
+    Stream<Message> send(Message message, { bool isFinal, String comment : null }) {        
+        Stream<Message> stream = super.send(message, isFinal: isFinal, comment: comment);
+        if(!isOpen) { //sending the message will have closed the exchange if the message was flagged as final
+            collection.responders.remove(this);
         }
-        else {
-            log.warning("CollectionRequestHandler doesn't handle request ${message.name}");
-        }
+        return stream;
     }
 }
 

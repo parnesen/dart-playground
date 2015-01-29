@@ -3,16 +3,18 @@
   import 'dart:async';
   import 'dart:html';
   import 'package:quiver/check.dart';
-  
+  import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 
-    
+  final Logger log = new Logger('client_websocket_controller');  
+  
+  //TODO: add in code to re-attempt connection upon connection loss: ie ReconnectingState
   class ClientWebsocketController {
       
-      State closedState;
-      State openingState;
-      State openState;
-      State closingState;
-      State errorState;
+      ClosedState closedState;
+      OpeningState openingState;
+      OpenState openState;
+      ClosingState closingState;
+      ErrorState errorState;
       
       //PUBLIC API
       
@@ -62,10 +64,24 @@
       WebSocket get webSocket => client.webSocket;
       
       void _onEnter();
+      void _onExit() {}
       void _send(String msg) => throw new StateError("not connected");
       
       Future<State> _open();
       Future<State> _close();
+      
+      void _onWebSocketClosed(CloseEvent closeEvent) {
+          client._webSocket = null;
+          client.closedState._set();
+      }
+      
+      void _onWebSocketError(Event errorEvent) {
+          String error = "Websocket Error: $errorEvent";
+          log.warning(error);
+          client.errorState
+                .._errorMsg = error
+                .._set();          
+      }
       
       Completer get _completer {
           if (client.completer == null) {
@@ -80,20 +96,27 @@
       Future<State> _set() {
           if(client.state != this) {
               StateTransition transition = new StateTransition(client.state, this);
-              print("ClientWebsocketController attempting $transition");
               try {
-                  _onEnter();
+                  client.state._onExit();
+                  this._onEnter();
               }
-              catch(exception) {
-                  print(exception);
+              catch(exception, stacktrace) {
+                  String error = "Error switching state[$transition]";
+                  log.warning(error, exception, stacktrace);
                   _completer.completeError(exception);
                   _completer = null;
+                  if(!(this is ErrorState)) {
+                      client.errorState
+                            .._errorMsg = error
+                            .._set();      
+                  }
               }
           }
           return _completer.future;
       }
       
       void _endStateReached() {
+          client.errorState._errorMsg = null;
           _reportNewState();
           _completer.complete(this);
           _completer = null;
@@ -103,7 +126,7 @@
           State prevState = client._state;
           client._state = this;
           StateTransition transition = new StateTransition(prevState, client._state);
-          print("ClientWebsocketController: $transition");
+          log.info("$transition");
           client._stateTransitionController.add(transition);
       }
          
@@ -140,12 +163,16 @@
             client._goal = client.openState;
             _reportNewState();
             String url = 'ws://${Uri.base.host}:9250/ws';
-            print("creating Websocket: $url");
+            log.info("creating Websocket: $url");
+            
             WebSocket webSocket = new WebSocket(url);
+            
             webSocket.onOpen.first.then((_) {
                 if(client._goal == client.openState) {
-                    print("websocket open");
+                    log.info("websocket open");
                     client._webSocket = webSocket;
+                    webSocket.onClose.listen((CloseEvent closeEvent) => client.state._onWebSocketClosed(closeEvent));
+                    webSocket.onError.listen((Event errorEvent)      => client.state._onWebSocketError (errorEvent));
                     client.openState._set();
                 }
                 else {
@@ -153,11 +180,14 @@
                 }
             });
             
-            webSocket.onError.first.then((ErrorEvent error) {
-                print(error.message);
+            webSocket.onError.first.then((Event errorEvent) {
+                String error = "failed to open websocket";
+                log.warning(error, errorEvent);
                 if(client._goal == client.openState) {
-                    client.errorState._set();
-                }              
+                    client.errorState
+                        .._errorMsg = error
+                        .._set();
+                }           
             });
         }
     }
@@ -167,17 +197,24 @@
         
         Future _open()  => new Future(() {});
         Future _close() => client.closingState._set();
+        
+        StreamSubscription msgStreamSubscription;
 
         void _onEnter() {
             checkState(webSocket != null);
             checkState(client.state == client.openingState);
             _endStateReached();
-            webSocket.onMessage.listen((MessageEvent event) {
+            
+            msgStreamSubscription = webSocket.onMessage.listen((MessageEvent event) {
                 if(client.state == this) {
                     String message = event.data as String;
                     client._streamController.add(message);
                 }
             });
+        }
+        
+        void _onExit() {
+            msgStreamSubscription.cancel();
         }
         
         void _send(String msg) => webSocket.send(msg);
@@ -195,25 +232,16 @@
             
             client._goal = client.closedState;
             _reportNewState();
-            webSocket.onClose.first.then((_) {
-                if(client._goal == client.closedState) {
-                    client._webSocket = null;
-                    client.closedState._set();
-                }
-            });
-            webSocket.onError.first.then((ErrorEvent error) {
-                print(error.message);
-                if(client._goal == client.closedState) {
-                    client._webSocket = null;
-                    client.errorState._set();
-                }          
-            });
             client._webSocket.close();
         }
     }
     
     class ErrorState extends State {
         ErrorState._create(ClientWebsocketController client) : super(client);
+        
+        String _errorMsg;
+        
+        String get errormsg => _errorMsg;
         
         Future _open()  => client.openingState._set();
         Future _close() => new Future(() {});
@@ -224,5 +252,11 @@
                 client._webSocket.close();
                 client._webSocket = null;
             }
+        }
+        
+        void _endStateReached() {
+            _reportNewState();
+            _completer.completeError(_errorMsg);
+            _completer = null;
         }
     }

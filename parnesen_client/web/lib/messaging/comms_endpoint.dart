@@ -2,15 +2,22 @@ part of messaging;
 
 /**
  * A simple model for asynchronous communication between client and server via websockets, sending and receiving json-backed Dart Objects.
- * All json values sent and received must be maps.
  * 
  * The idea is to have one CommsEndpoint at each client, and in the server, a CommsEndpoint for each connected client. 
  *  
  * The CommsEndpoint pipe is symmetical: Both the client or the server may 
  * initiate a [Request] for its counterparty to handle (with a [Responder]). 
  * 
- * a [Request] may constitute a simple single-request/single-reply, or the client and server may both send
- * multiple messages over the lifespan of the [Request]. 
+ * A communication between two CommsEndpoints always takes place within the context of an [Exchange] 
+ * A [Responder] is an [Exchange] that is spawned by the endpoing receving a new request message. A 
+ * request message is a message whose requsetId is non-null and not zero. [Responder] wraps a [Request] message
+ * in a [Request] object.
+ * 
+ * An [Exchange] may constitute a simple single-request/single-reply, or the client and server may both send
+ * multiple messages over the lifespan of the [Exchange].
+ * 
+ * A [Request] is always responded to with a single reply. Once opened, a [Responder] may elect to stick around
+ * to handle multiple [Request]s on the same exchange.
  * 
  * @author parnesen
  */
@@ -19,7 +26,7 @@ typedef void Sender(String message);
 
 final Logger log = new Logger('CommsEndpoint');
 
-typedef Responder ResponderFactory(CommsEndpoint endpoint, Message request);
+typedef Responder ResponderFactory(CommsEndpoint endpoint, Request request);
 
 class CommsEndpoint {
     
@@ -54,9 +61,9 @@ class CommsEndpoint {
      * Use this method for simple single-request/single-reply interop. 
      * 
      * For more complex client-server interop use the [newExchange] method to create
-     * a [Exchange] object through which multiple messages can be sent or received.
+     * an [Exchange] object through which multiple [Message]s [Request]s and [Result]s can be sent or received.
      **/
-    Future<Message> send(Message message) => newExchange().sendRequest(message);    
+    Future<Message> sendRequest(Message message) => newExchange().sendRequest(message, isFinalRequest: true);    
     
     Exchange newExchange() {
         int exchangeId = isClientSide ? ++_exchangeCounter : --_exchangeCounter;
@@ -67,50 +74,54 @@ class CommsEndpoint {
     
     bool isExchangeOriginatedHere(int exchangeId) => isClientSide ? exchangeId > 0 : exchangeId < 0;    
     
-    String toString() => "CommsEndpoint[${isClientSide ? "ClientSide" : "ServerSide"}]";    
+    String toString() => "CommsEndpoint[${isClientSide ? "ClientSide" : "ServerSide"}]";
 
     /** Incomming traffic from the remote Endpoint goes here **/
     void receive(String jsonString) {
         Message message;
         try {
             message = jsonToObj(JSON.decode(jsonString));
+            log.info("Recieved ${messageTypeOf(message)} : $message");
         }
         catch(error) {
             log.warning("Unable to parse string as Message: '$jsonString' due to error $error");
             return;
         }
         
-        log.info("Recieved Message : $message");
-        
-        int exchangeId = message.exchangeId;
-        
-        void onError(String errorMsg) {
-            log.warning(errorMsg);
-            _send(  new GenericFail(errorMsg : errorMsg), 
-                    exchangeId  : message.exchangeId, 
-                    requestId   : message.requestId,
-                    isFinal     : true); 
+        try {  
+            _forwardMessageToExchange(message);
         }
-             
-        _forwardMessageToExchange(exchangeId, message, onError);
+        catch(error, stacktrace) {
+            log.warning("Error handling message $message", error, stacktrace);
+        }
     }
 
-    void _forwardMessageToExchange(int exchangeId, Message message, void onError(String errorMessage)) {
+    void _forwardMessageToExchange(Message message) {
+        int exchangeId = message.exchangeId;
         Exchange exchange = _exchanges[exchangeId];
         if(exchange == null) {
             if(isExchangeOriginatedHere(exchangeId) || exchangeId <= _lastResponderId) {
-                  onError("$this recieved a message for which the Exchange has expired: ${message.name}");
+                  if(!(message is ExpiredExchange)) {
+                      _send(new ExpiredExchange(message.exchangeId));
+                  }
                   return;
             }
-            else {
+            else if(message is Request){
                 _lastResponderId = exchangeId;
                 ResponderFactory factory = responderFactories[message.name];
                 if(factory == null) {
-                    onError("$this: No ResponderFactory registered for message of type ${message.name}");                   
+                    String errorMsg = "$this: No ResponderFactory registered for request of type ${message.name}";
+                    log.warning(errorMsg);
+                    _send(  new GenericFail(requestId: message.requestId, errorMsg : errorMsg), 
+                            exchangeId  : message.exchangeId, 
+                            isFinal     : true);                                       
                     return;
                 }
                 exchange = factory(this, message);
                 _exchanges[exchangeId] = exchange;
+            }
+            else {
+                log.warning("A message was received for which there is no registed exchange: $message");
             }
         }
       
@@ -121,19 +132,15 @@ class CommsEndpoint {
     void _send(Message message, {
                    String name,
                    int exchangeId,
-                   int requestId,
-                   Result result,
                    bool isFinal,
                    String comment 
         }) {
             if(name         != null) { message.json['name']         = name;         }
             if(exchangeId   != null) { message.json['exchangeId']   = exchangeId;   }
-            if(requestId    != null) { message.json['requestId']    = requestId;    }
-            if(result       != null) { message.json['result']       = result;       }
             if(isFinal      != null) { message.json['isFinal']      = isFinal;      }
             if(comment      != null) { message.json['name']         = comment;      }
         
-            log.info("Sending Message $message");
+            log.info("Sending ${messageTypeOf(message)} : $message");
             //print("Sending Message $message");
             checkState(message.exchangeId != null);
             String str = JSON.encode(message.json); 
@@ -164,10 +171,13 @@ class Exchange {
         if(_requestController == null) {
             _requestController = new StreamController.broadcast();
             StreamSubscription subscription = stream
-                .where(  (Message message) => message.requestId != null && !isRequestOriginatedHere(message.requestId))
-                .listen( (Message message) => _requestController.add(new Request._create(this, message)));
+                .where  ((Message message) => message is Request && !isRequestOriginatedHere(message.requestId))
+                .listen ((Message message) => _requestController.add(message as Request));
             
-            _requestController.done.then((_) => subscription.cancel());
+            _requestController.done.then((_) {
+                subscription.cancel();
+                _requestController = null;
+            });
         }
         return _requestController.stream;
     }
@@ -180,23 +190,23 @@ class Exchange {
     Exchange._create(CommsEndpoint endpoint, int exchangeId) 
             : exchangeId = checkNotNull(exchangeId)
             , endpoint = checkNotNull(endpoint) {
-        
+        log.info("Exchange $exchangeId created ");
         _streamController.done.then((_) => dispose());
     }
     
     /** creates a new requestId that's unique within this exchange **/
     int nextRequest() => endpoint.isClientSide ? ++_requestCounter : --_requestCounter;
     
-    /** Sends a request and yields afuture that completes when the reply returns **/
-    Future<Message> sendRequest(Message request) {
+    /** Sends a request and yields a future that completes when the reply returns **/
+    Future<Result> sendRequest(Request request, {bool isFinalRequest}) {
         final int requestId = nextRequest();
-        return send(request, requestId : requestId)
-                .firstWhere((Message message) => message.requestId == requestId);
+        if(isFinalRequest != null) { request.json['isFinalRequest'] = isFinalRequest; }
+        request.json['requestId'] = requestId;
+        return send(request).firstWhere((Message message) => message is Result && message.requestId == requestId);
     }
     
-    Stream send(Message message, { int requestId, bool isFinal, String comment }) {
+    Stream<Message> send(Message message, { bool isFinal, String comment }) {
         endpoint._send( message, 
-                        requestId : requestId,
                         exchangeId : exchangeId,
                         isFinal : isFinal, 
                         comment : comment);
@@ -221,6 +231,7 @@ class Exchange {
         endpoint._exchanges.remove(exchangeId);
         _streamController.close();
         _onClose.complete(this);
+        log.info("Exchange $exchangeId disposed");
     }
     
     void _recieve(Message message) {
@@ -236,54 +247,46 @@ class Exchange {
 /**
  * An [Exchange] that responds to requests initiated from the remote [CommsEndpoint].
  * A [Responder] may remain alive to send and receive multiple messages to and from the remote [Exchange]. 
- * [Responder] instances areautomatically purged from the local [CommsEndpoint] when they send a message with isFinal = true
+ * [Responder] instances are automatically purged from the local [CommsEndpoint] when they send a message with isFinal = true
+ * 
+ * concrete instances should handle requests off of the [requests] stream of the [Exchange] baseclass
  */
 abstract class Responder extends Exchange {
     
-    /** true when this requestHandler sends a single reply (which then gets automatically marked with isFinal = true) **/
+    /** 
+     * true when this requestHandler sends a single reply (which then gets automatically marked with isFinal = true).
+     * true by default.
+     */
     final bool isSingleReply;
         
     Responder(CommsEndpoint endpoint, int exchangeId, {isSingleReply : true}) 
         : super._create(endpoint, exchangeId)
         , isSingleReply = isSingleReply;
     
-    /** Configures the given [response] message as a reply and sends it **/
-    Stream send(Message response, { int requestId, bool isFinal, Result result : null, String comment : null }) {        
-        isFinal = isFinal != null ? isFinal : isSingleReply;
-        if(requestId != null) { response.json['requestId'] = requestId; }
-        if(result != null) { response.json['result'] = result; }
-        if(response.result != null && response.result.isFail && response.comment != null) {
-            log.warning("Sending failure message: ${response.comment}");
-        }
-        return super.send(response, isFinal : isFinal, comment : comment);
-    }
-}
-
-/** represents a request initiated by the remote [Exchange]. [Responder] offers a stream of them. **/
-class Request<M extends Message> {
-    final Responder responder;
-    final M message;
-    int get requestId => message.requestId;
-    
-    Request._create(this.responder, this.message);
-    
     /** sends a generic, success message **/
-    void sendSuccess({String comment, bool isFinal }) { 
-        send(new GenericSuccess(comment : comment), isFinal : isFinal); 
-    } 
+    void sendSuccess(Request request, {String comment}) => sendResult(request, new GenericSuccess(comment : comment)); 
     
     /** sends a generic, final error message **/
-    void sendFail ({String errorMsg, bool isFinal }) {
-        send(new GenericFail(errorMsg : errorMsg), isFinal : isFinal);
-    }
+    void sendFail (Request request, {String errorMsg}) => sendResult(request, new GenericFail(errorMsg : errorMsg));
     
     /** Configures the given [response] message as a reply and sends it **/
-    void send(Message response, { bool isFinal, Result result, String comment }) {     
-        responder.send(response, requestId : requestId, isFinal : isFinal, result : result, comment : comment);
+    void sendResult(Request request, Result result, { String comment, bool isFinal }) {
+        result.json['requestId'] = request.requestId;
+        
+        isFinal = isFinal == true || request.isFinalRequest == true;
+        send(result, isFinal : isFinal, comment : comment);
     }
+    
+    /** Configures the given [message] message as a reply and sends it **/
+    Stream<Message> send(Message message, { bool isFinal, String comment : null }) {        
+        isFinal = isFinal == true || isSingleReply == true;
+        if(message is Result && message.isFail && message.comment != null) {
+            log.warning("Sending failure result: ${message.comment}");
+        }
+        return super.send(message, isFinal : isFinal, comment : comment);
+    }    
 }
 
 abstract class ExchangeStreamError { }
 class StreamDisposedError   extends ExchangeStreamError { }
 class TimeoutError          extends ExchangeStreamError { }
-

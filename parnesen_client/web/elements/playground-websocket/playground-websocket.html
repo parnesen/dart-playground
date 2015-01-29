@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 
 <link rel="import" href="../../packages/polymer/polymer.html">
+<link rel="import" href="../create-user-form/create-user-form.html">
 
 <polymer-element name="playground-websocket">
 
 <template>
   <div>[playground-websocket]</div> 
   <div>connection state = '{{connectionState}}'</div>
-  <div>
-    <input id="input" type="text" placeholder="input" value="{{inputString}}" autofocus=true>
-    <button id="createUser" on-click="{{createUser}}">Create User</button>
-    <button id="post" on-click="{{submitPost}}">Post</button>
-  </div>
+  <create-user-form></create-user-form>
   <div>Result: '{{outputString}}'</div>
   <div>
     <button id="goHome" on-click="{{goHome}}">goHome</button>

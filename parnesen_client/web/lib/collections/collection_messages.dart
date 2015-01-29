@@ -41,7 +41,7 @@ class Filter extends JsonObject {
 }
 
 /** kicks off a conversation about collection **/
-class OpenCollection extends Message {
+class OpenCollection extends Request {
     static const String NAME = "OpenCollection";
     
     final Filter filter;
@@ -61,23 +61,44 @@ class OpenCollection extends Message {
 }
 
 
-class OpenCollectionSuccess<T extends JsonObject> extends ValueListOperation<T> {
+class OpenCollectionSuccess extends Result {
     static const String NAME = "OpenCollectionSuccess";
     OpenCollectionSuccess.fromJson(Map<String, dynamic> json) :  super.fromJson(json);
     
-    OpenCollectionSuccess(String collectionName, int collectionSize, List<T> values) : 
-            super(NAME, values, result : Result.Success) {
-        
+    OpenCollectionSuccess(String collectionName, int collectionSize) :  super(name : NAME, isSuccess : true) {
         json['collectionName'] = checkNotNull(collectionName);
         json['collectionSize'] = checkNotNull(collectionSize);
     }
     
+    int get collectionName => json['collectionName'];
     int get collectionSize => json['collectionSize'];
-    
-    /** Number of values fetched is determined by the fetchUpTo parameter on the OpenCollection message **/
-    List<T> get values => super.values;
 }
 
+abstract class ValueListRequest<T extends JsonObject> extends Request {
+    final List<T> values;
+    
+    ValueListRequest.fromJson(Map<String, dynamic> json) 
+        :  super.fromJson(json)
+        ,  values = new List.from((json['values'] as List).map((json) => jsonToObj(json) as T));
+    
+    ValueListRequest(String name, List<T> values) : super(name : name), values = values {
+        checkNotNull(values);
+        json['values'] = new List.from(values.map((T value) => value.json));
+    }
+}
+
+abstract class ValueListResult<T extends JsonObject> extends Result {
+    final List<T> values;
+    
+    ValueListResult.fromJson(Map<String, dynamic> json) 
+        :  super.fromJson(json)
+        ,  values = new List.from((json['values'] as List).map((json) => jsonToObj(json) as T));
+    
+    ValueListResult(String name, List<T> values) : super(name : name), values = values {
+        checkNotNull(values);
+        json['values'] = new List.from(values.map((T value) => value.json));
+    }
+}
 
 abstract class ValueListOperation<T extends JsonObject> extends Message {
     final List<T> values;
@@ -86,13 +107,13 @@ abstract class ValueListOperation<T extends JsonObject> extends Message {
         :  super.fromJson(json)
         ,  values = new List.from((json['values'] as List).map((json) => jsonToObj(json) as T));
     
-    ValueListOperation(String name, List<T> values, { Result result }) : super(name : name, result : result), values = values {
+    ValueListOperation(String name, List<T> values) : super(name : name), values = values {
         checkNotNull(values);
         json['values'] = new List.from(values.map((T value) => value.json));
     }
 }
 
-class ReadValues extends Message {
+class ReadValues extends Request {
     static const String NAME = "ReadValues";
     ReadValues.fromJson(Map<String, dynamic> json) :  super.fromJson(json);
     
@@ -105,7 +126,7 @@ class ReadValues extends Message {
     int get count => json['count'];
 }
 
-class ReadResult<T extends JsonObject> extends ValueListOperation<T> {
+class ReadResult<T extends JsonObject> extends ValueListResult<T> {
     static const String NAME = "ReadResult";
     ReadResult.fromJson(Map<String, dynamic> json)  :  super.fromJson(json);
     
@@ -138,14 +159,14 @@ class ValuesDeleted<T extends JsonObject> extends ValueListOperation<T> {
     List<T> get values => super.values;
 }
 
-class CreateValues<T extends JsonObject> extends ValueListOperation<T> {
+class CreateValues<T extends JsonObject> extends ValueListRequest<T> {
     static const String NAME = "CreateValues";
     CreateValues.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     CreateValues(List<T> values) : super(NAME, values);
     List<T> get values => super.values;
 }
 
-class UpdateValues<T extends JsonObject> extends ValueListOperation<T> {
+class UpdateValues<T extends JsonObject> extends ValueListRequest<T> {
     static const String NAME = "UpdateValues";
     UpdateValues.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     UpdateValues(List<T> values) : super(NAME, values);
@@ -153,7 +174,7 @@ class UpdateValues<T extends JsonObject> extends ValueListOperation<T> {
 }
 
 /** a key must be a valid JSON value **/
-class DeleteValues<K> extends Message {
+class DeleteValues<K> extends Request {
     static const String NAME = "DeleteValues";
     DeleteValues.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     DeleteValues(List<K> keys) : super(name : NAME) {
