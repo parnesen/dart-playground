@@ -24,7 +24,6 @@ class PlaygroundWebsocket extends PolymerElement {
     
     InputElement input;
     DivElement userEvents;
-    Exchange userExchange;
     
     void attached() {
         
@@ -37,38 +36,24 @@ class PlaygroundWebsocket extends PolymerElement {
         stateSubscription = webSocketController.stateTransitions.listen((StateTransition transition) {
             connectionState = transition.newState;
         });
-        
-        userExchange = comms.newExchange()
-            ..stream
-                .where((Message message) => isCollectionUpdate(message))
-                .listen(onUserCollectionMsg);
-        
-        webSocketController.open()
-            .then((_) {
-                userExchange.sendRequest(new OpenCollection(userCollectionName, new Filter()))
-                    .then((Result result) => outputString = result.isSuccess ? "UserCollection Open" : "Failed to open UserCollection: $result");
-            })
-            .catchError((error) => outputString = error);
     }
     
     void onUserCollectionMsg(Message update) {
         userEvents.children.add(new DivElement()..innerHtml = update.toString());
     }
     
-    void submitPost() {
-        Post post = new Post("user1", inputString);
-        comms.sendRequest(new CreatePost(post))
-            .then((Result result) => outputString = result.isSuccess ? result.comment : "request failed: ${result}");
-    }
+//    void submitPost() {
+//        Post post = new Post("user1", inputString);
+//        comms.sendRequest(new CreatePost(post))
+//            .then((Result result) => outputString = result.isSuccess ? result.comment : "request failed: ${result}");
+//    }
     
     void goHome() => Route.home.go();
     
     void detached() {
         super.detached();
-        userExchange.dispose();
         stateSubscription.cancel();
         webSocketController.close();
-        
     }
     
 

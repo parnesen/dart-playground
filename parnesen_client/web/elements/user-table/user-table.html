@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+
+<polymer-element name="user-table">
+
+<template> 
+    <div>User Count: '{{userCount}}'</div>
+    <table id="table" style="width:100%">
+        <tr>
+            <th>id</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Role</th>
+            <th>Email</th>
+        </tr>
+    </table>
+    <div>Output: '{{output}}'</div>
+</template>
+
+<script type="application/dart" src="user-table.dart"></script>
+
+</polymer-element>

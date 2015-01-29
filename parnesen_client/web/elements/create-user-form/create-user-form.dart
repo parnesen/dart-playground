@@ -1,7 +1,6 @@
 library playgroundNest;
 
 import 'package:polymer/polymer.dart';
-import '../playground-route/playground-route.dart';
 import 'dart:html';
 import '../../lib/util.dart';
 import '../../lib/app/users/user_messages.dart';
@@ -42,8 +41,6 @@ class CreateUserForm extends PolymerElement { CreateUserForm.created() : super.c
             output = "!!$error!!";
         }
     }
-    
-    void goHome() => Route.home.go();
     
 }
 

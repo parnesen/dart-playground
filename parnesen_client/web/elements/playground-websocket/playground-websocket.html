@@ -2,19 +2,20 @@
 
 <link rel="import" href="../../packages/polymer/polymer.html">
 <link rel="import" href="../create-user-form/create-user-form.html">
+<link rel="import" href="../user-table/user-table.html">
 
 <polymer-element name="playground-websocket">
 
 <template>
   <div>[playground-websocket]</div> 
   <div>connection state = '{{connectionState}}'</div>
-  <create-user-form></create-user-form>
   <div>Result: '{{outputString}}'</div>
+  <create-user-form></create-user-form>
+  <h1>Users</h1>
+  <user-table></user-table>
   <div>
     <button id="goHome" on-click="{{goHome}}">goHome</button>
   </div>
-  <h2>User Events</h2>
-  <div id="userEvents"></div>
 </template>
 
 <script type="application/dart" src="playground-websocket.dart"></script>
