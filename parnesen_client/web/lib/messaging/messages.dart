@@ -13,6 +13,7 @@ JsonObject jsonToObj(Map<String, dynamic> json) {
     return obj;
 }
 
+/** Base class for [Message]s and for json-backed objects contained by [Message]s **/
 abstract class JsonObject {
     
     static final Map<String, jsonObjectFactory> factories = {
@@ -34,8 +35,7 @@ abstract class JsonObject {
     });
 }
 
-
-
+/** A message sent by an [Exchange] via a [CommsEndpoint] **/
 class Message extends JsonObject {
     
     static const String NAME = "Message";
@@ -72,6 +72,7 @@ class Message extends JsonObject {
     String toString() => json.toString();
 }
 
+/** an [Exchange] sends a [Request] to the remote endpoint and expects a [Result] in reply **/
 abstract class Request extends Message {
     static const String NAME = "Request";
     
@@ -94,6 +95,7 @@ abstract class Request extends Message {
     bool get isFinalRequest => json['isFinalRequest'];
 }
 
+/** The reply to a given [Request] **/
 class Result extends Message {
     static const String NAME = "Result";
     
@@ -116,18 +118,21 @@ class Result extends Message {
     bool get isFail    => isSuccess == false;
 }
 
+/** a message that can be returned by a Responder to indicate a successful operation **/
 class GenericSuccess extends Result {
     static const String NAME = "GenericSuccess";
     GenericSuccess.fromJson(Map<String, dynamic> json) : super.fromJson(json);    
     GenericSuccess({int requestId, String comment}) : super(name: NAME, requestId: requestId, isSuccess: true, comment: comment);
 }
 
+/** a message that can be returned by a Responder to indicate a failure **/
 class GenericFail extends Result {
     static const String NAME = "GenericFail"; 
     GenericFail.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     GenericFail({int requestId, String errorMsg}) : super(name: NAME, requestId: requestId, isSuccess: false, comment: errorMsg);
 }
 
+/** a message sent out in response to a received message for an [Exchange] that is no longer open **/
 class ExpiredExchange extends Message {
     static const String NAME = "ExpiredExchange";
     

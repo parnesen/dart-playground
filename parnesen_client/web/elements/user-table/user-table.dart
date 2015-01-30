@@ -62,11 +62,12 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     }
     
     void usersCreated(List<User> users) {
+        userCount += users.length;
         users.forEach((User user) {
             int insertIndex = getInsertIndexOf(user.userId);
             TableRowElement row = tc.insertRow(insertIndex);
             setRowCells(row, user);
-        });   
+        });
     }
     
     void usersUpdated(List<User> users) {
@@ -79,10 +80,32 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     }
     
     void usersDeleted(Set<String> userIds) {
+        userCount -= userIds.length;
         userIds.forEach((String userId) {
             int rowIndex = getRowIndexOf(userId);
             if(rowIndex != null) {
                 rows.removeAt(rowIndex);
+            }
+        });
+    }
+    
+    void setRowCells(TableRowElement row, User user) {
+      row
+        ..children.clear()
+        ..addCell().text = user.userId
+        ..addCell().text = user.firstName
+        ..addCell().text = user.lastName
+        ..addCell().text = user.role
+        ..addCell().text = user.email
+        ..addCell().children.add(new ButtonElement()
+                                        ..innerHtml = "Delete"
+                                        ..onClick.listen((_) => delete(user.userId)));
+    }    
+    
+    void delete(String userId) {
+        userExchange.sendRequest(new DeleteValues([userId])).then((Result result) {
+            if(result.isFail) {
+                output = result.comment;
             }
         });
     }
@@ -113,27 +136,7 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
         return tc.children.length;
     }
     
-    void setRowCells(TableRowElement row, User user) {
-      row.children.clear();
-      row.addCell().text = user.userId;
-      row.addCell().text = user.firstName;
-      row.addCell().text = user.lastName;
-      row.addCell().text = user.role;
-      row.addCell().text = user.email;
-      
-      TableCellElement deleteCell = row.addCell();
-      ButtonElement deleteButton = new ButtonElement()..innerHtml = "Delete";
-      deleteButton.onClick.listen((_) => delete(user.userId));
-      deleteCell.children.add(deleteButton);
-    }
-    
-    void delete(String userId) {
-        userExchange.sendRequest(new DeleteValues([userId])).then((Result result) {
-            if(result.isFail) {
-                output = result.comment;
-            }
-        });
-    }
+
 }
 
 

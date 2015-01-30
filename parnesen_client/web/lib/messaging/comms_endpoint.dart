@@ -1,23 +1,27 @@
 part of messaging;
 
 /**
- * A simple model for asynchronous communication between client and server via websockets, sending and receiving json-backed Dart Objects.
+ * A framework for asynchronous communication between client and server via websockets, sending and receiving json-backed Dart Objects.
  * 
- * The idea is to have one CommsEndpoint at each client, and in the server, a CommsEndpoint for each connected client. 
+ * The idea is to have one CommsEndpoint inside each browser, and in the server, a CommsEndpoint for each connected browser. 
  *  
- * The CommsEndpoint pipe is symmetical: Both the client or the server may 
- * initiate a [Request] for its counterparty to handle (with a [Responder]). 
+ * The CommsEndpoint pipe is symmetical: Both the client or the server may open a new [Exchange]
+ * and initiate a [Request] for its counterparty to handle (with a [Responder]). 
  * 
- * A communication between two CommsEndpoints always takes place within the context of an [Exchange] 
- * A [Responder] is an [Exchange] that is spawned by the endpoing receving a new request message. A 
- * request message is a message whose requsetId is non-null and not zero. [Responder] wraps a [Request] message
- * in a [Request] object.
+ * A communication between two CommsEndpoints always takes place within the context of an [Exchange], which represents a unique conversation
+ * between the two [CommsEndpoint]s.
+ * 
+ * A [Responder] is an [Exchange] that is spawned by the [CommsEndpoint] receving a new [Request] message.
  * 
  * An [Exchange] may constitute a simple single-request/single-reply, or the client and server may both send
  * multiple messages over the lifespan of the [Exchange].
  * 
- * A [Request] is always responded to with a single reply. Once opened, a [Responder] may elect to stick around
- * to handle multiple [Request]s on the same exchange.
+ * A [Request] is always responded to with a single [Result]. Once opened, a [Responder] may elect to stick around
+ * to handle more [Request]s on the same exchange.
+ * 
+ * To end an [Exchange], send a message with the isFinal flag set to true. This will cause both the sending and the receiving
+ * [Exchange] to dispose. You can also send a [Request] with the isFinalRequest flag set to true. This will cause the server 
+ * to send its [Result] with the isFinal flag set to true.
  * 
  * @author parnesen
  */
@@ -206,7 +210,14 @@ class Exchange {
     }
     
     Stream<Message> send(Message message, { bool isFinal, String comment }) {
-        endpoint._send( message, 
+        if(!isOpen) {
+            String errorMsg = "Exchange[$exchangeId] is closed and cannot send message $message";
+            log.warning(errorMsg);
+            throw new StateError(errorMsg);
+        }
+        
+        checkState(isOpen, message : "Exchange[$exchangeId] is closed and cannot send message $message");
+        endpoint._send( message,
                         exchangeId : exchangeId,
                         isFinal : isFinal, 
                         comment : comment);
