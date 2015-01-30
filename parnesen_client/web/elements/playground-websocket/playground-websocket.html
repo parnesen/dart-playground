@@ -8,8 +8,8 @@
 
 <template>
   <div>[playground-websocket]</div> 
-  <div>connection state = '{{connectionState}}'</div>
-  <div>Result: '{{outputString}}'</div>
+  <div>connection state = '{{connectionState}}'</div><button id="reconnect" on-click="{{reconnect}}">Reconnect</button>
+  <div>Result: '{{output}}'</div>
   <create-user-form></create-user-form>
   <h1>Users</h1>
   <user-table></user-table>

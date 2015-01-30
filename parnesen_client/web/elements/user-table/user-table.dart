@@ -18,6 +18,8 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     @observable String output = "";
     
     TableElement tableElement;
+    TableSectionElement get tc => tableElement.tBodies.single;
+    List<Element> get rows => tc.children;
     
     Exchange userExchange;
     
@@ -53,37 +55,84 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     }
     
     void onReadResult(int startIndex, List<User> users) {
-        TableSectionElement tc = tableElement.tBodies.single;
         users.forEach((User user) {
             TableRowElement row = tc.addRow();
-            row.addCell().text = user.userId;
-            row.addCell().text = user.firstName;
-            row.addCell().text = user.lastName;
-            row.addCell().text = user.role;
-            row.addCell().text = user.email;
+            setRowCells(row, user);
         });
     }
     
     void usersCreated(List<User> users) {
-        onReadResult(0, users);
+        users.forEach((User user) {
+            int insertIndex = getInsertIndexOf(user.userId);
+            TableRowElement row = tc.insertRow(insertIndex);
+            setRowCells(row, user);
+        });   
     }
     
     void usersUpdated(List<User> users) {
-//        users.forEach((User user) {
-//            UserTableRow row = tableElement.children.firstWhere((child) => child is UserTableRow && child.user.userId == user.userId);
-//            if(row != null) {
-//                row.user = user; 
-//            }
-//        });
+        users.forEach((User user) {
+            TableRowElement row = rows.firstWhere((TableRowElement row) => row.children.first.innerHtml == user.userId);
+            if(row != null) {
+                setRowCells(row, user);
+            }
+        });
     }
     
     void usersDeleted(Set<String> userIds) {
-//        for(int ii = tableElement.children.length - 1; ii >= 0; ii--) {
-//            Element element = tableElement.children[ii];
-//            if(element is UserTableRow && userIds.contains(element.user.userId)) {
-//                tableElement.children.removeAt(ii);
-//            }
-//        }
+        userIds.forEach((String userId) {
+            int rowIndex = getRowIndexOf(userId);
+            if(rowIndex != null) {
+                rows.removeAt(rowIndex);
+            }
+        });
+    }
+    
+    //TODO: binary search
+    int getRowIndexOf(String userId) {
+        List<Element> tableRows = rows;
+        for (int ii = 1; ii < rows.length; ii++) {
+            TableRowElement tr = rows[ii];
+            String rowUserId = tr.children[0].innerHtml;
+            if(rowUserId == userId) {
+                return ii;
+            }
+        }
+        return null;
+    }
+
+    //TODO: binary search
+    int getInsertIndexOf(String userId) {
+        List<Element> tableRows = rows;
+        for (int ii = 1; ii < rows.length; ii++) {
+            TableRowElement tr = rows[ii];
+            String rowUserId = tr.children[0].innerHtml;
+            if(rowUserId.compareTo(userId) > 0) {
+                return ii;
+            }
+        }
+        return tc.children.length;
+    }
+    
+    void setRowCells(TableRowElement row, User user) {
+      row.children.clear();
+      row.addCell().text = user.userId;
+      row.addCell().text = user.firstName;
+      row.addCell().text = user.lastName;
+      row.addCell().text = user.role;
+      row.addCell().text = user.email;
+      
+      TableCellElement deleteCell = row.addCell();
+      ButtonElement deleteButton = new ButtonElement()..innerHtml = "Delete";
+      deleteButton.onClick.listen((_) => delete(user.userId));
+      deleteCell.children.add(deleteButton);
+    }
+    
+    void delete(String userId) {
+        userExchange.sendRequest(new DeleteValues([userId])).then((Result result) {
+            if(result.isFail) {
+                output = result.comment;
+            }
+        });
     }
 }
 

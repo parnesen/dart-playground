@@ -18,7 +18,7 @@ class PlaygroundWebsocket extends PolymerElement {
     PlaygroundWebsocket.created() : super.created();
     
     @observable State connectionState = webSocketController.state;
-    @observable String outputString = "";
+    @observable String output = "";
     
     StreamSubscription<StateTransition> stateSubscription;
     
@@ -28,6 +28,8 @@ class PlaygroundWebsocket extends PolymerElement {
     void attached() {
         
         log.info("playground-websocket attached");
+        
+        webSocketController.open().catchError((error) => output = "failed to connect: $error");
         
         userEvents  = $['userEvents'];
         
@@ -49,6 +51,11 @@ class PlaygroundWebsocket extends PolymerElement {
 //    }
     
     void goHome() => Route.home.go();
+    
+    void reconnect() {
+        output = "";
+        webSocketController.open().catchError((error) => output = "failed to reconnect: $error");
+    }
     
     void detached() {
         super.detached();

@@ -11,6 +11,9 @@ import 'dart:math';
 import '../../util.dart';
 import '../../sha1_hash.dart';
 
+
+//TODO: move all the client-server IO into the CollectionResponder including broadcasting, 
+//and make the crud methods know nothing of the Responder and just focus on the DB work. 
 class UserCollection extends Collection<String, User> {
     
     final Sha1Hash _hash = new Sha1Hash(salt : config['salt']);
@@ -110,19 +113,22 @@ class UserCollection extends Collection<String, User> {
         StringBuffer commaSerparatedUserIds = 
             userIds.fold(
                 new StringBuffer(), 
-                (strBuf, userId) {
+                (StringBuffer strBuf, String userId) {
                     String comma = userId == userIds.last ? '' : ',';
-                    strBuf.write("$userId$comma"); 
+                    strBuf.write("'$userId'$comma "); 
+                    return strBuf;
                 }
             );
         
-        String sql = "DELETE FROM user WHERE user in ($commaSerparatedUserIds)";
+        String sql = "DELETE FROM user WHERE userid in ($commaSerparatedUserIds)";
         db.query(sql)
             .then((_) {
                 responder.sendSuccess(request);
                 broadcast(new ValuesDeleted(userIds));
             })
-            .catchError((e) => responder.sendFail(request, errorMsg : "delete users failed: $e"));
+            .catchError((e) {
+                responder.sendFail(request, errorMsg : "delete users failed: $e");
+            });
     }
     
     //TODO: this is extremely inefficient for large tables

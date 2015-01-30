@@ -152,11 +152,13 @@ class ValuesUpdated<T extends JsonObject> extends ValueListOperation<T> {
     List<T> get values => super.values;
 }
 
-class ValuesDeleted<T extends JsonObject> extends ValueListOperation<T> {
+class ValuesDeleted<K> extends Message {
     static const String NAME = "ValuesDeleted";
     ValuesDeleted.fromJson(Map<String, dynamic> json) : super.fromJson(json);
-    ValuesDeleted(List<T> values) : super(NAME, values);
-    List<T> get values => super.values;
+    ValuesDeleted(List<K> values) : super(name : NAME) {
+        json['values'] = values;
+    }
+    List<K> get values => json['values'];
 }
 
 class CreateValues<T extends JsonObject> extends ValueListRequest<T> {
