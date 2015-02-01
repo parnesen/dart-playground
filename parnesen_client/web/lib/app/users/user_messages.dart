@@ -8,8 +8,7 @@ import '../../sha1_hash.dart';
 
 void registerUserMessages() {
     JsonObject.factories.addAll({
-        User.NAME                  : (json) => new User.fromJson(json),
-        LoginRequest.NAME          : (json) => new LoginRequest.fromJson(json)
+        User.NAME                  : (json) => new User.fromJson(json)
     });
 }
 
@@ -51,21 +50,6 @@ class User extends JsonObject {
     /** SHA1 hash of the user's password **/
     @nullable String get hashedPassword => json['hashedPassword'];
 }
-
-class LoginRequest extends Message {
-    static const String NAME = "Login";
-    LoginRequest.fromJson(Map<String, dynamic> json) : super.fromJson(json);
-    
-    LoginRequest(String userId, String password) : super(name : NAME) {
-        json['userId']   = checkNotNull(userId);
-        json['password'] = checkNotNull(password);
-    }
-    
-    String get userId => json['userId'];
-    String get password => json['password'];
-}
-
-
 
 //The HTML 5 Standard http://stackoverflow.com/questions/16800540/validate-email-address-in-dart
 final RegExp emailRegex = new RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$");

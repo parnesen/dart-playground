@@ -3,13 +3,17 @@
 <link rel="import" href="../../packages/polymer/polymer.html">
 <link rel="import" href="../create-user-form/create-user-form.html">
 <link rel="import" href="../user-table/user-table.html">
+<link rel="import" href="../login-form/login-form.html">
 
 <polymer-element name="playground-websocket">
 
 <template>
   <div>[playground-websocket]</div> 
-  <div>connection state = '{{connectionState}}'</div><button id="reconnect" on-click="{{reconnect}}">Reconnect</button>
+  <div>connection state = '{{connectionState}}'</div>
+  <button id="connect" on-click="{{connect}}">Connect</button>
+  <button id="connect" on-click="{{disconnect}}">Disconnect</button>
   <div>Result: '{{output}}'</div>
+  <login-form></login-form>
   <create-user-form></create-user-form>
   <h1>Users</h1>
   <user-table></user-table>

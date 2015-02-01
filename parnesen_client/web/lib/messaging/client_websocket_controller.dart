@@ -250,8 +250,11 @@
             _endStateReached();
             if(client._webSocket != null) {
                 client._webSocket.close();
-                client._webSocket = null;
             }
+        }
+        
+        void _onExit() {
+            client._webSocket = null;
         }
         
         void _endStateReached() {

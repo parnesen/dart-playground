@@ -17,9 +17,16 @@ main() {
     
     webSocketController.stream.listen(comms.receive);
     
+    webSocketController.stateTransitions.listen((StateTransition transition) {
+        if(transition.newState != OpenState) {
+            comms.isLoggedIn = false;
+        }
+    });
+    
     registerUserMessages();
     registerPostsMessages();
     registerCollectionMessages();
+    registerLoginMessages();
 
     initPolymer().run(() {
         // code here works most of the time

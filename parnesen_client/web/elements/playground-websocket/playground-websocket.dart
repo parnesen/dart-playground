@@ -4,9 +4,6 @@ import 'package:polymer/polymer.dart';
 import '../playground-route/playground-route.dart';
 import '../../lib/messaging/client_websocket_controller.dart';
 import '../../lib/messaging/messaging.dart';
-import '../../lib/app/users/user_messages.dart';
-import '../../lib/app/posts/posts_messages.dart';
-import '../../lib/collections/collection_messages.dart';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import '../../index.dart';
 
@@ -52,9 +49,14 @@ class PlaygroundWebsocket extends PolymerElement {
     
     void goHome() => Route.home.go();
     
-    void reconnect() {
+    void connect() {
         output = "";
-        webSocketController.open().catchError((error) => output = "failed to reconnect: $error");
+        webSocketController.open().catchError((error) => output = "failed to connect: $error");
+    }
+    
+    void disconnect() {
+        output = "";
+        webSocketController.close().catchError((error) => output = "failed to disconnect: $error");
     }
     
     void detached() {

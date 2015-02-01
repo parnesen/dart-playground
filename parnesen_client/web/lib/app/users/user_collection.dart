@@ -4,19 +4,19 @@ import 'dart:async';
 import 'user_messages.dart';
 import '../../collections/server_collection_service.dart';
 import '../../collections/collection_messages.dart';
-import '../../messaging/messaging.dart';
 import '../../../../lib/db_connection.dart';
 import 'package:sqljocky/sqljocky.dart';
 import 'dart:math';
 import '../../util.dart';
 import '../../sha1_hash.dart';
+import '../../messaging/messaging.dart';
 
 
 //TODO: move all the client-server IO into the CollectionResponder including broadcasting, 
 //and make the crud methods know nothing of the Responder and just focus on the DB work. 
 class UserCollection extends Collection<String, User> {
     
-    final Sha1Hash _hash = new Sha1Hash(salt : config['salt']);
+    final Sha1Hash _saltedHash = new Sha1Hash(salt : config['salt']);
    
     static void init() {
         CollectionService.collectionFactories[userCollectionName] = () => new UserCollection();
@@ -42,8 +42,8 @@ class UserCollection extends Collection<String, User> {
                 return;
             }
             String comma = user == users.last ? '' : ',';
-            String password = _hash[user.hashedPassword];
-            sql.write("('${user.userId}', '${user.firstName}', '${user.lastName}', '${user.role}', '${user.email}', '${_hash[user.hashedPassword]}')$comma");
+            String password = _saltedHash[user.hashedPassword];
+            sql.write("('${user.userId}', '${user.firstName}', '${user.lastName}', '${user.role}', '${user.email}', '${_saltedHash[user.hashedPassword]}')$comma");
         });
         
         db.query(sql.toString())
@@ -99,6 +99,8 @@ class UserCollection extends Collection<String, User> {
         users.forEach((User user) => sql.write("WHEN '${user.userId}' THEN '${user.email}'"));
         sql.write("END");
         
+        //we don't allow password resets via update
+        
         sql.write(" WHERE userid IN ($userIds)");
         
         db.query(sql.toString())
@@ -110,6 +112,11 @@ class UserCollection extends Collection<String, User> {
     }
     
     void deleteValues(CollectionResponder responder, DeleteValues request, List<String> userIds) {
+        if(!responder.endpoint.isAdmin) {
+            responder.sendResult(request, new UserNotAdmin());
+            return;
+        }
+        
         StringBuffer commaSerparatedUserIds = 
             userIds.fold(
                 new StringBuffer(), 

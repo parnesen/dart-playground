@@ -72,7 +72,7 @@ class CollectionResponder extends Responder {
     Filter filter;
     
     CollectionResponder(Collection collection, CommsEndpoint endpoint, int exchangeId) 
-        : super(endpoint, exchangeId, isSingleReply : false) 
+        : super(endpoint, exchangeId, isSingleReply : false, requiresLogin: true) 
         , collection = checkNotNull(collection) {
         
         this.requests.listen(onRequest);

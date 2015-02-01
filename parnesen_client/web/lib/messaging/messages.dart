@@ -23,6 +23,11 @@ abstract class JsonObject {
           GenericFail.NAME      : (json) => new GenericFail.fromJson(json),
           ExchangeEnded.NAME    : (json) => new ExchangeEnded.fromJson(json),
           ExpiredExchange.NAME  : (json) => new ExpiredExchange.fromJson(json),
+          LoginRequest.NAME     : (json) => new LoginRequest.fromJson(json),
+          LogoutRequest.NAME    : (json) => new LogoutRequest.fromJson(json),
+          LoginSuccess.NAME     : (json) => new LoginSuccess.fromJson(json),
+          UserNotLoggedIn.NAME  : (json) => new UserNotLoggedIn.fromJson(json),
+          UserNotAdmin.NAME     : (json) => new UserNotAdmin.fromJson(json),          
     };
     
     /** the underlying json contains all of the message's (and it's subclass') state **/
@@ -159,4 +164,61 @@ String messageTypeOf(Message message) {
     if(message is Request) { return "Request"; }
     if(message is Result)  { return "Result";  }
     return "Message";
+}
+
+void registerLoginMessages() {
+    JsonObject.factories.addAll({
+        LoginRequest.NAME          : (json) => new LoginRequest.fromJson(json),
+        LogoutRequest.NAME         : (json) => new LogoutRequest.fromJson(json),
+        LoginSuccess.NAME          : (json) => new LoginSuccess.fromJson(json),
+        UserNotLoggedIn.NAME       : (json) => new UserNotLoggedIn.fromJson(json),
+        UserNotAdmin.NAME          : (json) => new UserNotAdmin.fromJson(json),
+    });
+}
+
+class LoginRequest extends Request {
+    static const String NAME = "Login";
+    LoginRequest.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    
+    LoginRequest(String userId, String password) : super(name : NAME) {
+        json['userId']   = checkNotNull(userId);
+        json['hashedPassword'] = sha1Hash[checkIsSet(password)];
+    }
+    
+    String get userId => json['userId'];
+    String get hashedPassword => json['hashedPassword'];
+}
+
+class LogoutRequest extends Request {
+    static const String NAME = "Logout";
+    LogoutRequest.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    
+    LogoutRequest() : super(name : NAME);
+}
+
+class LoginSuccess extends Result {
+    static const String NAME = "LoginSuccess";
+    LoginSuccess.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+     
+    LoginSuccess(bool isAdmin) : super(name : NAME) {
+        json['isAdmin'] = isAdmin;
+    }
+    
+    bool get isAdmin => json['isAdmin'];
+}
+
+/** sent by the server if the client attempts a [Request] before logging in */
+class UserNotLoggedIn extends Result {
+    static const String NAME = "UserNotLoggedIn";
+    UserNotLoggedIn.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    
+    UserNotLoggedIn() : super(name : NAME, isSuccess : false);
+}
+
+/** sent by the server if a non-admin client attempts a [Request] for which admin privileges are required */
+class UserNotAdmin extends Result {
+    static const String NAME = "UserNotAdmin";
+    UserNotAdmin.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    
+    UserNotAdmin() : super(name : NAME, isSuccess : false, isFinal : true);
 }

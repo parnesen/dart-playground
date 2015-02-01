@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+
+<polymer-element name="login-form">
+
+<template> 
+    <h1>Login</h1>
+    <div id='fields'>
+        <br>User Id           <br><input id="userId" type="text" value="{{userId}}" autofocus=true>        
+        <br>password          <br><input id="password" type="password" value="{{password}}">
+    </div>
+    <div>Result: '{{output}}'</div>
+    <button id='login' on-click="{{login}}">Login</button>
+    <button id='logout' on-click="{{logout}}">Logout</button>
+</template>
+
+<script type="application/dart" src="login-form.dart"></script>
+
+</polymer-element>

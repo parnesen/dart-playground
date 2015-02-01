@@ -26,7 +26,7 @@ part of messaging;
  * @author parnesen
  */
 
-typedef void Sender(String message);
+typedef void SendFunction(String message);
 
 final Logger log = new Logger('CommsEndpoint');
 
@@ -39,8 +39,39 @@ class CommsEndpoint {
     final bool isClientSide;
     bool get   isServerSide => !isClientSide;
     
+    @nullable String userId;
+    
+    bool _isLoggedIn = false;
+    bool get isLoggedIn => _isLoggedIn;
+    void set isLoggedIn(bool val) {
+        if(_isLoggedIn == checkNotNull(val)) { return; }
+        _isLoggedIn = val;
+        _loginStreamController.add(val);
+        if(_isLoggedIn) {
+            _whenLoggedOutCompleter = new Completer();
+            _whenLoggedInCompleter.complete();
+        }
+        else {
+            _whenLoggedOutCompleter.complete();
+            _whenLoggedInCompleter = new Completer();
+        }
+    }
+    
+    Completer _whenLoggedInCompleter  = new Completer();
+    Completer _whenLoggedOutCompleter = new Completer()..complete();
+    Future get whenLoggedIn  => _whenLoggedInCompleter.future;
+    Future get whenLoggedOut => _whenLoggedOutCompleter.future;
+    final StreamController<bool> _loginStreamController = new StreamController.broadcast();
+    Stream<bool> get loginStream => _loginStreamController.stream;
+    
+    
+    bool isAdmin;
+    
+    /** attributes this [CommsEndpoint] or the user it represents */
+    final Map<String, dynamic> attributes = {};
+    
     /** the function this [CommsEndpoint] calls to send a string to its remote counterpart **/
-    final Sender _senderFunction;
+    final SendFunction _senderFunction;
     
     /** open conversations between this endpoint and the remote endpoint**/
     final Map<int, Exchange> _exchanges = {};
@@ -50,13 +81,12 @@ class CommsEndpoint {
      *  if [side] is Server then the id of the first request initiated on this side will be -1 and subsequent ids will be <
      */
     int _exchangeCounter = 0;
-    int _lastResponderId = 0;
     
-    CommsEndpoint.clientSide(Sender sendFunction)
+    CommsEndpoint.clientSide(SendFunction sendFunction)
         : isClientSide = true
         , _senderFunction = checkNotNull(sendFunction);
     
-    CommsEndpoint.serverSide(Sender sendFunction)
+    CommsEndpoint.serverSide(SendFunction sendFunction)
         : isClientSide = false
         , _senderFunction = checkNotNull(sendFunction);
     
@@ -100,36 +130,46 @@ class CommsEndpoint {
         }
     }
 
-    void _forwardMessageToExchange(Message message) {
-        int exchangeId = message.exchangeId;
-        Exchange exchange = _exchanges[exchangeId];
-        if(exchange == null) {
-            if(isExchangeOriginatedHere(exchangeId) || exchangeId <= _lastResponderId) {
-                  if(!(message is ExpiredExchange)) {
-                      _send(new ExpiredExchange(message.exchangeId));
-                  }
-                  return;
+    void _forwardMessageToExchange(final Message message) {
+        
+        final int exchangeId = message.exchangeId;
+        
+        final Exchange exchange = _exchanges[exchangeId];
+        if(exchange != null) {
+            exchange._recieve(message);
+            return;
+        }
+        
+        if(isExchangeOriginatedHere(exchangeId)) {
+            if(!(message is ExpiredExchange)) {
+                _send(new ExpiredExchange(message.exchangeId));
             }
-            else if(message is Request){
-                _lastResponderId = exchangeId;
-                ResponderFactory factory = responderFactories[message.name];
-                if(factory == null) {
-                    String errorMsg = "$this: No ResponderFactory registered for request of type ${message.name}";
-                    log.warning(errorMsg);
-                    _send(  new GenericFail(requestId: message.requestId, errorMsg : errorMsg), 
-                            exchangeId  : message.exchangeId, 
-                            isFinal     : true);                                       
-                    return;
-                }
-                exchange = factory(this, message);
-                _exchanges[exchangeId] = exchange;
-            }
-            else {
-                log.warning("A message was received for which there is no registed exchange: $message");
-            }
+            return;
+        }
+        
+        if((message is Request)) {
+            handleNewRequest(message);
+        }
+        else {
+            log.warning("A message was received for which there is no registered exchange: $message");
+        }
+    }
+
+    void handleNewRequest(final Request request) {
+        ResponderFactory factory = responderFactories[request.name];
+        if(factory == null) {
+            String errorMsg = "$this: No ResponderFactory registered for request of type ${request.name}";
+            log.warning(errorMsg);
+            _send(  new GenericFail(requestId: request.requestId, errorMsg : errorMsg), 
+                    exchangeId  : request.exchangeId,  
+                    isFinal     : true);                                       
+            return;
         }
       
-        exchange._recieve(message);
+        Responder responder = factory(this, request);
+        _exchanges[request.exchangeId] = responder;
+      
+        responder._recieve(request);
     }
     
     /** Internal method used by [Request] and [Responder] to send fully prepared messages to the remote [CommsEndpoint]**/
@@ -260,19 +300,57 @@ class Exchange {
  * A [Responder] may remain alive to send and receive multiple messages to and from the remote [Exchange]. 
  * [Responder] instances are automatically purged from the local [CommsEndpoint] when they send a message with isFinal = true
  * 
- * concrete instances should handle requests off of the [requests] stream of the [Exchange] baseclass
+ * Concrete instances should handle requests off of the [requests] stream of the [Exchange] baseclass
+ * 
+ * A responder can be flagged as [requiresLogin] or [requiresAdminStatus], which when true, will prevent [Requests]
+ * from reaching the responder if the required state isn't met. The [CommmEndpoint] then automatically sends 
+ * [RequiresLogin] or [RequiresAdminStatus] results back to the client.
  */
 abstract class Responder extends Exchange {
     
     /** 
-     * true when this requestHandler sends a single reply (which then gets automatically marked with isFinal = true).
      * true by default.
+     * true when this requestHandler sends a single reply (which then gets automatically marked with isFinal = true).
      */
     final bool isSingleReply;
+    
+    /** 
+     * true by default. 
+     * only affects server-side responders. When true, the responder will not receive the Request unless the user is logged in 
+     **/
+    final bool requiresLogin;
+    
+    /** 
+     * false by default. 
+     * only affects server-side responders. When true, the responder will not receive the Request unless the user is an admin 
+     **/
+    final bool requiresAdminStatus;
         
-    Responder(CommsEndpoint endpoint, int exchangeId, {isSingleReply : true}) 
+    Responder(CommsEndpoint endpoint, int exchangeId, {isSingleReply : true, bool requiresLogin : true, bool requiresAdminStatus : false}) 
         : super._create(endpoint, exchangeId)
-        , isSingleReply = isSingleReply;
+        , isSingleReply = isSingleReply
+        , requiresLogin = requiresLogin == true
+        , requiresAdminStatus = requiresAdminStatus == true;
+    
+    void _recieve(Message message) {
+        void sendError(Message error) {
+            if(message is Request) { sendResult(message, error); }
+            else { send(error); }
+        }
+        
+        if(endpoint.isClientSide) {
+            super._recieve(message);
+        }
+        else if(requiresLogin && !endpoint.isLoggedIn) {
+            sendError(new UserNotLoggedIn());
+        }
+        else if(requiresAdminStatus && !endpoint.isAdmin) {
+            sendError(new UserNotAdmin());
+        }
+        else {
+            super._recieve(message);
+        }
+    }
     
     /** sends a generic, success message **/
     void sendSuccess(Request request, {String comment}) => sendResult(request, new GenericSuccess(comment : comment)); 

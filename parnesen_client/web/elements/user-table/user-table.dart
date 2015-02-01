@@ -1,14 +1,12 @@
 library playgroundNest;
 
 import 'package:polymer/polymer.dart';
-import '../playground-route/playground-route.dart';
 import 'dart:html';
-import '../../lib/util.dart';
 import '../../lib/app/users/user_messages.dart';
 import '../../index.dart';
 import '../../lib/messaging/messaging.dart';
 import '../../lib/collections/collection_messages.dart';
-import 'dart:async';
+import '../../lib/messaging/client_websocket_controller.dart';
 
 
 @CustomTag('user-table')
@@ -23,50 +21,56 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     
     Exchange userExchange;
     
+    bool isAttached = false;
+    
     void attached() {
-        
-        tableElement = $['table'];
-        userExchange = comms.newExchange();
-        
-        webSocketController.open().then((_) {
-            userExchange.sendRequest(new OpenCollection(userCollectionName, new Filter(), fetchUpTo: 1000))
-                .then((Result result) { 
-                    if (result.isFail) throw "Failed to open UserCollection: $result";
-                    else if(result is OpenCollectionSuccess) {
-                        userCount = result.collectionSize;
-                    }
-                })
-                .catchError((error) => output = "!!$error!!");
-        });
+        isAttached = true;
+        tableElement  = $['table'];
+        userExchange  = comms.newExchange();      
+        comms.whenLoggedIn.then((_) => openCollection());
         
         userExchange.stream.listen((Message message) {
             if      (message is ReadResult)    { onReadResult(message.startIndex, message.values); }
             else if (message is ValuesCreated) { usersCreated(message.values); }
             else if (message is ValuesUpdated) { usersUpdated(message.values); }
             else if (message is ValuesDeleted) { usersDeleted(new Set.from(message.values)); }
-            else if (message is ReadResult)    { onReadResult(message.startIndex, message.values); }
         });
+        
+        webSocketController.open();
+    }
+    
+    void openCollection() {
+        if(!isAttached || !comms.isLoggedIn) { return; }
+        userExchange.sendRequest(new OpenCollection(userCollectionName, new Filter(), fetchUpTo: 1000))
+            .then((Result result) { 
+                if (result.isFail) { throw "Failed to open UserCollection: $result"; }
+                else if(result is OpenCollectionSuccess) { 
+                    userCount = result.collectionSize; 
+                    comms.whenLoggedOut.then((_) { 
+                        if(isAttached) {
+                            rows.clear();
+                            comms.whenLoggedIn.then((_) => openCollection()); 
+                        }
+                    });
+                }
+            })
+            .catchError((error) => output = "!!$error!!");
     }
     
     void detached() {
-        if(userExchange != null) {
-            userExchange.dispose();
-        }
+        isAttached = false;
+        userExchange.dispose();
     }
     
     void onReadResult(int startIndex, List<User> users) {
-        users.forEach((User user) {
-            TableRowElement row = tc.addRow();
-            setRowCells(row, user);
-        });
+        users.forEach((User user) => setRowCells(tc.addRow(), user));
     }
     
     void usersCreated(List<User> users) {
         userCount += users.length;
         users.forEach((User user) {
             int insertIndex = getInsertIndexOf(user.userId);
-            TableRowElement row = tc.insertRow(insertIndex);
-            setRowCells(row, user);
+            setRowCells(tc.insertRow(insertIndex), user);
         });
     }
     
@@ -103,11 +107,17 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     }    
     
     void delete(String userId) {
-        userExchange.sendRequest(new DeleteValues([userId])).then((Result result) {
-            if(result.isFail) {
-                output = result.comment;
-            }
-        });
+        if(userId == comms.userId) {
+            output = "Error: Cannot delete own user";
+            return;
+        }
+        
+        userExchange.sendRequest(new DeleteValues([userId]))
+            .then((Result result) { 
+                if(result.isFail) {
+                    output = result is UserNotAdmin ? "Permission Denied" : "Unexpected Error: $result";
+                }
+            });
     }
     
     //TODO: binary search

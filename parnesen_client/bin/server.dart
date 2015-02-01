@@ -10,12 +10,14 @@ import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import '../web/lib/messaging/messaging.dart';
 import '../web/lib/app/posts/posts_messages.dart';
 import '../web/lib/app/users/user_messages.dart';
-import '../web/lib/app/posts/posts_request_handlers.dart';
+import '../web/lib/app/posts/posts_responder.dart';
 import '../lib/db_connection.dart';
+import '../web/lib/app/users/login_responder.dart';
 import '../web/lib/collections/server_collection_service.dart';
 import '../web/lib/app/users/user_collection.dart';
 import '../web/lib/collections/collection_messages.dart';
 import '../web/lib/util.dart';
+
 
 
 final Logger log = new Logger('playground_server');
@@ -53,6 +55,7 @@ void main() {
     registerPostsMessages();
     registerUserMessages();
     registerPostsRequestHandlers();
+    registerLoginRequestHandlers();
     CollectionService.init();
     UserCollection.init();
       
