@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+
+<polymer-element name="post-tile">
+
+<template> 
+    <style>
+        #outerdiv {
+            border: 2px solid;
+            border-radius: 5px;
+            height: 300px;
+            width: 300px;
+            Background=LightGray;
+            float: left;
+            margin-left: 5px;
+            margin-top: 5px;
+        }
+        #posts {
+            height: 240px;
+            width: 299px;
+            overflow-y: scroll;
+            border-top: thin black;
+        }
+    </style>
+
+    <div id="outerdiv">
+        <h3 title='{{firstName}} {{lastName}}'>{{userId}}</h3>
+        <div id='posts'></div>
+    </div>
+</template>
+
+<script type="application/dart" src="post-tile.dart"></script>
+
+</polymer-element>

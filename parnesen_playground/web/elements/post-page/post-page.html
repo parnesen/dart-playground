@@ -6,10 +6,18 @@
 <polymer-element name="post-page">
 
 <template>
+
+    <style>
+        #tiles {
+            display: inline-block;
+        }
+    </style>
+
   <h1>Posts</h1>
   User {{userId}}: <input id="postinput" type="text" value="{{postText}}" autofocus=true><button on-click="{{submitPost}}">Post</button>
   <div>Output: '{{output}}'</div>
-  <span id="tiles"></span>
+  <div id="tiles"></div>
+  <br>
   <button id="goHome" on-click="{{goHome}}">goHome</button>
 </template>
 

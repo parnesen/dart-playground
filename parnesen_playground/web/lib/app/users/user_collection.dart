@@ -108,13 +108,14 @@ class UserCollection extends Collection<String, User> {
     }
     
     void deleteValues(CollectionResponder responder, DeleteValues request, List<String> userIds) {
-        if(userIds.contains(responder.userId)) {
-            responder.sendFail(request, errorMsg: "Cannot delete own user");
+
+        if(!responder.endpoint.isAdmin) {
+            responder.sendResult(request, new UserNotAdmin());
             return;
         }
         
-        if(!responder.endpoint.isAdmin) {
-            responder.sendResult(request, new UserNotAdmin());
+        if(userIds.contains(responder.userId)) {
+            responder.sendFail(request, errorMsg: "Cannot delete own user");
             return;
         }
         

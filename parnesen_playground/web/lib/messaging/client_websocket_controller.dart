@@ -57,9 +57,11 @@
   
   abstract class State {
       
+      final String name;
+      
       final ClientWebsocketController client;
       
-      State(ClientWebsocketController client) : client = client;
+      State(this.name, this.client);
       
       WebSocket get webSocket => client.webSocket;
       
@@ -130,7 +132,7 @@
           client._stateTransitionController.add(transition);
       }
          
-      String toString() => this.runtimeType.toString();
+      String toString() => name;
     }
   
     class StateTransition {
@@ -140,7 +142,7 @@
     }
   
     class ClosedState extends State {
-        ClosedState._create(ClientWebsocketController client) : super(client);
+        ClosedState._create(ClientWebsocketController client) : super("ClosedState", client);
         
         Future<State> _open()  => client.openingState._set();
         Future<State> _close() => new Future(() {});
@@ -153,7 +155,7 @@
     }
   
     class OpeningState extends State {
-        OpeningState._create(ClientWebsocketController client) : super(client);
+        OpeningState._create(ClientWebsocketController client) : super("OpeningState", client);
         
         Future _open()  => _completer.future;
         Future _close() => client.closingState._set();
@@ -192,7 +194,7 @@
     }
     
     class OpenState extends State {
-        OpenState._create(ClientWebsocketController client) : super(client);
+        OpenState._create(ClientWebsocketController client) : super("OpenState", client);
         
         Future _open()  => new Future(() {});
         Future _close() => client.closingState._set();
@@ -220,7 +222,7 @@
     }
     
     class ClosingState extends State {
-        ClosingState._create(ClientWebsocketController client) : super(client);
+        ClosingState._create(ClientWebsocketController client) : super("ClosingState", client);
         
         Future _open()  => client.openingState._set();
         Future _close() => _completer.future;
@@ -236,7 +238,7 @@
     }
     
     class ErrorState extends State {
-        ErrorState._create(ClientWebsocketController client) : super(client);
+        ErrorState._create(ClientWebsocketController client) : super("ErrorState", client);
         
         String _errorMsg;
         

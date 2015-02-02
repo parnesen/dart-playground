@@ -22,7 +22,7 @@ class PostTile extends PolymerElement { PostTile.created() : super.created();
     StreamSubscription newPostsSubscription;
     StreamSubscription postServiceInitSubscription;
     
-    Element postsContainer;
+    DivElement postsContainer;
     
     factory PostTile(User user) {
         return (new Element.tag('post-tile') as PostTile)
@@ -59,6 +59,7 @@ class PostTile extends PolymerElement { PostTile.created() : super.created();
         if(!isAttached) { return; }
         DivElement postElement = new DivElement()..innerHtml = post.text;
         postsContainer.children.add(postElement);
+        postElement.scrollIntoView();
     }
 }
 
