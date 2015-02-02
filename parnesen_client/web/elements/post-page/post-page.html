@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 
 <link rel="import" href="../../packages/polymer/polymer.html">
-<link rel="import" href="../create-user-form/create-user-form.html">
-<link rel="import" href="../user-table/user-table.html">
-<link rel="import" href="../login-form/login-form.html">
+<link rel="import" href="../post-tile/post-tile.html">
 
 <polymer-element name="post-page">
 
 <template>
   <h1>Posts</h1>
-  <input id="postinput" type="text" value="{{postText}}" autofocus=true><button on-click="{{submitPost}}">Post</button>
+  User {{userId}}: <input id="postinput" type="text" value="{{postText}}" autofocus=true><button on-click="{{submitPost}}">Post</button>
   <div>Output: '{{output}}'</div>
-  <div id="tiles"></div>
+  <span id="tiles"></span>
   <button id="goHome" on-click="{{goHome}}">goHome</button>
 </template>
 

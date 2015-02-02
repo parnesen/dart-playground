@@ -9,7 +9,6 @@ import 'dart:math';
 import '../../util.dart';
 import 'post_messages.dart';
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
-import 'package:quiver/check.dart';
 
 final Logger log = new Logger('postCollectionName');
 
@@ -26,7 +25,6 @@ class PostCollection extends Collection<String, Post> {
     Completer _initializedCompleter = new Completer();
     InitStatus initStatus = InitStatus.uninitialized;
     
-    //Map<int, Post> posts = new LinkedHashMap.identity();
     List<Post> posts;
     
     void open(CollectionResponder responder, OpenCollection request, String collectionName, Filter filter, int fetchUpTo) {
@@ -35,6 +33,7 @@ class PostCollection extends Collection<String, Post> {
             fetchPosts()
                 .then((List<Post> posts) {
                     this.posts = posts;
+                    initStatus = InitStatus.initialized;
                     _initializedCompleter.complete();
                 })
                 .catchError((error) => _initializedCompleter.completeError(error));
@@ -100,8 +99,10 @@ class PostCollection extends Collection<String, Post> {
                     int postId = row[0];
                     DateTime timestamp = row[1];
                     return transaction.commit().then((_) {
+                        post.json['userId'] = responder.userId;
                         post.json['postId'] = postId;
                         post.json['timestamp'] = timestamp.toString();
+                        this.posts.add(post);
                         responder.sendResult(request, new ValueCreated(post));
                         broadcast(new ValuesCreated([post]));
                     });

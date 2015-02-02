@@ -15,13 +15,15 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     @observable String output = "";
     
     TableElement tableElement;
-    List<Element> get rows => tableElement.tBodies.single.children;
+    TableSectionElement get tableSection => tableElement.tBodies.single;
+    List<Element> get rows => tableSection.children;
     
     Exchange userExchange;
     
     bool isAttached = false;
     
     void attached() {
+        super.attached();
         isAttached = true;
         tableElement  = $['table'];
         userExchange  = comms.newExchange();      
@@ -35,6 +37,12 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
         });
         
         webSocketController.open();
+    }
+    
+    void detached() {
+        super.detached();
+        isAttached = false;
+        userExchange.dispose();
     }
     
     void openCollection() {
@@ -55,20 +63,15 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
             .catchError((error) => output = "!!$error!!");
     }
     
-    void detached() {
-        isAttached = false;
-        userExchange.dispose();
-    }
-    
     void onReadResult(int startIndex, List<User> users) {
-        users.forEach((User user) => setRowCells(tc.addRow(), user));
+        users.forEach((User user) => setRowCells(tableSection.addRow(), user));
     }
     
     void usersCreated(List<User> users) {
         userCount += users.length;
         users.forEach((User user) {
             int insertIndex = getInsertIndexOf(user.userId);
-            setRowCells(tc.insertRow(insertIndex), user);
+            setRowCells(tableSection.insertRow(insertIndex), user);
         });
     }
     
@@ -136,7 +139,7 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
                 return ii;
             }
         }
-        return tc.children.length;
+        return rows.length;
     }
     
 

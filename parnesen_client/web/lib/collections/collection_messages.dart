@@ -3,7 +3,6 @@ library collection_messages;
 import '../messaging/messaging.dart';
 import 'package:quiver/check.dart';
 
-const String userCollectionName = "UserCollection";
 
 void registerCollectionMessages() {
     JsonObject.factories.addAll({

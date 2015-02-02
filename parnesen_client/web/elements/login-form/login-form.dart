@@ -25,6 +25,7 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
     
     StreamSubscription loginSubscription;
     void attached() {
+        super.attached();
         loginSubscription = comms.initUpdates.listen((_) {
             updateLoginStatus();
         });
@@ -32,11 +33,12 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
     }
     
     void updateLoginStatus() {
-        output = comms.isLoggedIn ? "logged in" : "logged out";
-        userId = comms.userId;
+        output = comms.isLoggedIn ? "logged in as ${comms.userId}" : "logged out";
+        userId = comms.userId != null ? comms.userId : userId;
     }
     
     void detached() {
+        super.detached();
         loginSubscription.cancel();
     }
     
@@ -50,6 +52,7 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
                         comms.userId = userId;
                         comms.isAdmin = result.isAdmin;
                         comms.isLoggedIn = true;
+                        updateLoginStatus();
                     } else {
                         output = "login failed";
                     }

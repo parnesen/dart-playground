@@ -18,6 +18,7 @@ class ConnectionStatus extends PolymerElement {
     StreamSubscription<StateTransition> stateSubscription;
 
     void attached() {
+        super.attached();
         bool isEnterKey(KeyboardEvent event) => event.keyCode == KeyCode.ENTER;
 
         stateSubscription = webSocketController.stateTransitions.listen((StateTransition transition) {

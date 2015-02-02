@@ -2,9 +2,6 @@ library playgroundNest;
 
 import 'package:polymer/polymer.dart';
 import '../../lib/app/users/user_messages.dart';
-import '../../index.dart';
-import '../../lib/messaging/messaging.dart';
-import '../../lib/collections/collection_messages.dart';
 import 'dart:html';
 import '../../lib/util.dart';
 import 'package:quiver/check.dart';
@@ -23,8 +20,9 @@ class PostTile extends PolymerElement { PostTile.created() : super.created();
     @nonNull User user;
     bool isAttached = false;
     StreamSubscription newPostsSubscription;
+    StreamSubscription postServiceInitSubscription;
     
-    DivElement postsDiv;
+    Element postsContainer;
     
     factory PostTile(User user) {
         return (new Element.tag('post-tile') as PostTile)
@@ -35,26 +33,33 @@ class PostTile extends PolymerElement { PostTile.created() : super.created();
     }
     
     void attached() {
+        super.attached();
         isAttached = true;
-        postsDiv = $['posts'];
-        posts.whenInitialized.then((_) => addPosts(posts.from(userId)));
-        
-        newPostsSubscription = posts.newPostsFrom(userId).listen((Post post) => addPosts([posts]));
+        postsContainer = $['posts'];
+        postServiceInitSubscription = posts.initUpdates.listen((_) => resetPosts());
+        newPostsSubscription = posts.newPostsFrom(userId).listen((Post post) => addPost(post));
+        resetPosts();
     }
     
     void detached() {
+        super.detached();
         isAttached = false;
         newPostsSubscription.cancel();
+        postServiceInitSubscription.cancel();
     }
     
-    void addPosts(Iterable<Post> posts) {
-        if(!isAttached) { return; }
-        for(Post post in posts) {
-            DivElement postElement = new DivElement()..innerHtml = post.text;
-            postsDiv.children.add(postElement);
+    void resetPosts() {
+        postsContainer.children.clear();
+        if(posts.initialized) {
+            posts.from(userId).forEach((post) => addPost(post));
         }
     }
     
+    void addPost(Post post) {
+        if(!isAttached) { return; }
+        DivElement postElement = new DivElement()..innerHtml = post.text;
+        postsContainer.children.add(postElement);
+    }
 }
 
 

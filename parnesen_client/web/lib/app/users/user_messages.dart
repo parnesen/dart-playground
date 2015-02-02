@@ -6,6 +6,8 @@ import 'package:quiver/check.dart';
 import '../../util.dart';
 import '../../sha1_hash.dart';
 
+const String userCollectionName = "UserCollection";
+
 void registerUserMessages() {
     JsonObject.factories.addAll({
         User.NAME                  : (json) => new User.fromJson(json)

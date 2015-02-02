@@ -84,6 +84,7 @@ class PlaygroundRoute extends PolymerElement {
     PlaygroundRoute.created() : super.created();
     
     void attached() {
+        super.attached();
         _routerDiv = $['routerDiv'];
         Route.all.forEach((Route route) => route._register());
         _router.listen();
