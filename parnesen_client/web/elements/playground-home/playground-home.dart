@@ -5,13 +5,10 @@ import '../playground-route/playground-route.dart';
 class PlaygroundHome extends PolymerElement {
     PlaygroundHome.created() : super.created();
     
-    void attached() {
-        print("playground-home attached");
-    }
-    
-    void goCounter()   => Route.counter  .go();
-    void goNest()      => Route.nest     .go();
-    void goWebSocket() => Route.websocket.go();
+    void goCounter()   => Route.counter     .go();
+    void goNest()      => Route.nest        .go();
+    void goUserPage()  => Route.users       .go();
+    void goPostPage()  => Route.posts       .go();
 }
 
 

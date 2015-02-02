@@ -13,9 +13,7 @@ class NestInnerLevel extends PolymerElement {
         //an instance of yourself here. Then you can set your member variables. 
         //WARNING: the html will BIND to the dart element BEFORE you get a chance to set your 
         //member variables, so if you want them to have an impact, they must be @observable
-        NestInnerLevel element = new Element.tag('nest-inner-level');
-        element.myValue = val;
-        return element;
+        return (new Element.tag('nest-inner-level') as NestInnerLevel)..myValue = val;
     }
     
     NestInnerLevel.created() : super.created();

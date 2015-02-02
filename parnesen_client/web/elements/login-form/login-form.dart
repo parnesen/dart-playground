@@ -14,7 +14,6 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
     
     @observable String userId;
     @observable String password;
-    
     @observable String output = "";
     
     CancelLoginFunction cancelLoginFunction;
@@ -26,9 +25,15 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
     
     StreamSubscription loginSubscription;
     void attached() {
-        loginSubscription = comms.loginStream.listen((bool isLoggedIn) {
-            output = isLoggedIn ? "logged in" : "logged out";
+        loginSubscription = comms.initUpdates.listen((_) {
+            updateLoginStatus();
         });
+        updateLoginStatus();
+    }
+    
+    void updateLoginStatus() {
+        output = comms.isLoggedIn ? "logged in" : "logged out";
+        userId = comms.userId;
     }
     
     void detached() {

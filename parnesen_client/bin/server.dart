@@ -8,9 +8,9 @@ import 'dart:io';
 import 'package:route/server.dart' show Router;
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import '../web/lib/messaging/messaging.dart';
-import '../web/lib/app/posts/posts_messages.dart';
+import '../web/lib/app/posts/post_messages.dart';
 import '../web/lib/app/users/user_messages.dart';
-import '../web/lib/app/posts/posts_responder.dart';
+import '../web/lib/app/posts/post_collection.dart';
 import '../lib/db_connection.dart';
 import '../web/lib/app/users/login_responder.dart';
 import '../web/lib/collections/server_collection_service.dart';
@@ -47,17 +47,20 @@ void main() {
     // Set up logger.
     Logger.root.level = Level.CONFIG;
     Logger.root.onRecord
-        .listen((LogRecord rec) => print('${rec.loggerName}[${rec.level.name}] ${rec.time}: ${rec.message}'));
+        .listen((LogRecord rec) {
+            String stacktrace = rec.stackTrace != null ? "\n${rec.stackTrace}" : "";
+            print('${rec.loggerName}[${rec.level.name}] ${rec.time}: ${rec.message} $stacktrace'); 
+        });
 
     int port = 9250;
       
     registerCollectionMessages();
-    registerPostsMessages();
+    registerPostMessages();
     registerUserMessages();
-    registerPostsRequestHandlers();
     registerLoginRequestHandlers();
     CollectionService.init();
     UserCollection.init();
+    PostCollection.init();
       
     connectDB();
     

@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 
 <link rel="import" href="../../packages/polymer/polymer.html">
+<link rel="import" href="../connection-status/connection-status.html">
+<link rel="import" href="../login-form/login-form.html">
 
 <polymer-element name="playground-home">
 
 <template> 
-    <h1>playground-home</h1>
-    <button id='counter' on-click="{{goCounter}}"   >Counter</button>
-    <button id='nest'    on-click="{{goNest}}"      >Nest</button>
-    <button id='websocket'    on-click="{{goWebSocket}}"      >WebSocket</button>
+    <connection-status></connection-status>
+    <login-form></login-form>
+    <h2>Pages</h2>
+    <button on-click="{{goCounter}}"  >Counter</button>
+    <button on-click="{{goNest}}"     >Nest</button>
+    <button on-click="{{goUserPage}}" >Users/Login</button>
+    <button on-click="{{goPostPage}}" >Posts</button>
 </template>
 
 <script type="application/dart" src="playground-home.dart"></script>

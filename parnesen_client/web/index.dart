@@ -4,7 +4,7 @@ import 'lib/messaging/client_websocket_controller.dart';
 import 'lib/messaging/messaging.dart';
 import 'lib/collections/collection_messages.dart';
 import 'lib/app/users/user_messages.dart';
-import 'lib/app/posts/posts_messages.dart';
+import 'lib/app/posts/post_messages.dart';
 
 final ClientWebsocketController webSocketController = new ClientWebsocketController();
 final CommsEndpoint comms  = new CommsEndpoint.clientSide(webSocketController.send);
@@ -19,14 +19,16 @@ main() {
     
     webSocketController.stateTransitions.listen((StateTransition transition) {
         if(transition.newState != OpenState) {
-            comms.isLoggedIn = false;
+            comms.initialized = false;
         }
     });
     
     registerUserMessages();
-    registerPostsMessages();
+    registerPostMessages();
     registerCollectionMessages();
     registerLoginMessages();
+    
+    webSocketController.open();
 
     initPolymer().run(() {
         // code here works most of the time

@@ -32,7 +32,12 @@ final Logger log = new Logger('CommsEndpoint');
 
 typedef Responder ResponderFactory(CommsEndpoint endpoint, Request request);
 
-class CommsEndpoint {
+/** 
+ * Represents the connection to a remote computer and provides support for sending and receiving messages from the remote computer.
+ * 
+ * Initialized when logged in, uninitialised when not logged in. 
+ */
+class CommsEndpoint extends Initializable<CommsEndpoint> {
     
     static final Map<String, ResponderFactory> responderFactories = {};
     
@@ -41,30 +46,11 @@ class CommsEndpoint {
     
     @nullable String userId;
     
-    bool _isLoggedIn = false;
-    bool get isLoggedIn => _isLoggedIn;
-    void set isLoggedIn(bool val) {
-        if(_isLoggedIn == checkNotNull(val)) { return; }
-        _isLoggedIn = val;
-        _loginStreamController.add(val);
-        if(_isLoggedIn) {
-            _whenLoggedOutCompleter = new Completer();
-            _whenLoggedInCompleter.complete();
-        }
-        else {
-            _whenLoggedOutCompleter.complete();
-            _whenLoggedInCompleter = new Completer();
-        }
-    }
-    
-    Completer _whenLoggedInCompleter  = new Completer();
-    Completer _whenLoggedOutCompleter = new Completer()..complete();
-    Future get whenLoggedIn  => _whenLoggedInCompleter.future;
-    Future get whenLoggedOut => _whenLoggedOutCompleter.future;
-    final StreamController<bool> _loginStreamController = new StreamController.broadcast();
-    Stream<bool> get loginStream => _loginStreamController.stream;
-    
-    
+    bool get isLoggedIn => initialized;
+    void set isLoggedIn(bool val) => setInitialized(val);
+    Future get whenLoggedIn  => whenInitialized;
+    Future get whenLoggedOut => whenUninitialized;
+
     bool isAdmin;
     
     /** attributes this [CommsEndpoint] or the user it represents */
@@ -205,6 +191,8 @@ class Exchange {
     bool get isOpen => _isOpen;
     bool _isFinalMessageSentOrReceived = false;
     int _requestCounter = 0;
+    
+    String get userId => endpoint.userId;
     
     /** stream of messages ariving from the remote [CommsEndoint] **/
     Stream<Message> get stream => _streamController.stream;

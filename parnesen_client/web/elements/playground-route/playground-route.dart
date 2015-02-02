@@ -4,11 +4,14 @@ import 'package:polymer/polymer.dart';
 import 'package:route_hierarchical/client.dart';
 import 'dart:html';
 import 'package:quiver/check.dart';
+import 'package:logging/logging.dart' show Logger;
 
 typedef void RouteFunction(RouteEvent);
 
 Router _router = new Router();
 DivElement _routerDiv;
+
+final Logger log = new Logger('PlaygroundRoute');
 
 class Route {
     
@@ -30,12 +33,17 @@ class Route {
             "/playground/nest", 
             (RouteEvent) => _showElement(new Element.tag('nest-outer-level')));
     
-    static final Route websocket = new Route._create(
-            "websocket", 
-            "/playground/websocket", 
-            (RouteEvent) => _showElement(new Element.tag('playground-websocket')));    
+    static final Route users = new Route._create(
+            "users", 
+            "/playground/users", 
+            (RouteEvent) => _showElement(new Element.tag('user-page')));
     
-    static final List<Route> all = [home, counter, nest, websocket];
+    static final Route posts = new Route._create(
+            "posts", 
+            "/playground/posts", 
+            (RouteEvent) => _showElement(new Element.tag('post-page')));        
+    
+    static final List<Route> all = [home, counter, nest, users, posts];
     
     String name, path;
     bool isDefault;
@@ -53,7 +61,7 @@ class Route {
             defaultRoute: isDefault, 
             path: path, 
             enter: (RouteEvent) {
-                print("Routing to: $name");
+                log.info("Routing to: $name");
                 routeFunction(RouteEvent);
             }
         );
@@ -79,6 +87,5 @@ class PlaygroundRoute extends PolymerElement {
         _routerDiv = $['routerDiv'];
         Route.all.forEach((Route route) => route._register());
         _router.listen();
-        Route.home.go();
     }
 }

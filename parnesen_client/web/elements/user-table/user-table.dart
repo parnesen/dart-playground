@@ -6,7 +6,6 @@ import '../../lib/app/users/user_messages.dart';
 import '../../index.dart';
 import '../../lib/messaging/messaging.dart';
 import '../../lib/collections/collection_messages.dart';
-import '../../lib/messaging/client_websocket_controller.dart';
 
 
 @CustomTag('user-table')
@@ -107,11 +106,6 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     }    
     
     void delete(String userId) {
-        if(userId == comms.userId) {
-            output = "Error: Cannot delete own user";
-            return;
-        }
-        
         userExchange.sendRequest(new DeleteValues([userId]))
             .then((Result result) { 
                 if(result.isFail) {

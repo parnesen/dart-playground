@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+<link rel="import" href="../create-user-form/create-user-form.html">
+<link rel="import" href="../user-table/user-table.html">
+
+<polymer-element name="user-page">
+
+<template>
+  <h1>Users</h1> 
+  <create-user-form></create-user-form>
+  <user-table></user-table>
+  <button id="goHome" on-click="{{goHome}}">goHome</button>
+</template>
+
+<script type="application/dart" src="user-page.dart"></script>
+
+</polymer-element>

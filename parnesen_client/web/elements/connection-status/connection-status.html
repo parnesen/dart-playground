@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+
+<polymer-element name="connection-status">
+
+<template>
+    <h2>Connection Status</h2> 
+    <div>connection state = '{{connectionState}}'</div>
+    <button id="connect" on-click="{{connect}}">Connect</button>
+    <button id="connect" on-click="{{disconnect}}">Disconnect</button>
+    <div>Connection Result: '{{result}}'</div>
+</template>
+
+<script type="application/dart" src="connection-status.dart"></script>
+
+</polymer-element>

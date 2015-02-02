@@ -33,7 +33,11 @@ class UserCollection extends Collection<String, User> {
         });
     }
     
-    void createValues(CollectionResponder responder, CreateValues request, List<User> users) {
+    void createValue(CollectionResponder responder, CreateValue request, User user) {
+        createValues(responder, request, [user]);
+    }
+    
+    void createValues(CollectionResponder responder, Request request, List<User> users) {
         
         StringBuffer sql = new StringBuffer("INSERT INTO user(userid, firstname, lastname, role, email, password) VALUES ");
         users.forEach((User user) {
@@ -72,15 +76,7 @@ class UserCollection extends Collection<String, User> {
 //            END
 //        WHERE id IN (1,2,3)
         
-        String userIds = 
-            users.fold(
-                new StringBuffer(), 
-                (strBuf, user) {
-                    String comma = user == users.last ? '' : ',';
-                    strBuf.write("${user.userId}$comma");
-                }
-            ).toString();
-        
+        String userIds = toCommaSeperatedString(users, stringify: (User user) => user.userId);
         StringBuffer sql = new StringBuffer("UPDATE users");
                 
         sql.write(" SET firstname = CASE userid");
@@ -112,20 +108,17 @@ class UserCollection extends Collection<String, User> {
     }
     
     void deleteValues(CollectionResponder responder, DeleteValues request, List<String> userIds) {
+        if(userIds.contains(responder.userId)) {
+            responder.sendFail(request, errorMsg: "Cannot delete own user");
+            return;
+        }
+        
         if(!responder.endpoint.isAdmin) {
             responder.sendResult(request, new UserNotAdmin());
             return;
         }
         
-        StringBuffer commaSerparatedUserIds = 
-            userIds.fold(
-                new StringBuffer(), 
-                (StringBuffer strBuf, String userId) {
-                    String comma = userId == userIds.last ? '' : ',';
-                    strBuf.write("'$userId'$comma "); 
-                    return strBuf;
-                }
-            );
+        String commaSerparatedUserIds = toCommaSeperatedString(userIds, useQuotes: true);
         
         String sql = "DELETE FROM user WHERE userid in ($commaSerparatedUserIds)";
         db.query(sql)
@@ -140,7 +133,7 @@ class UserCollection extends Collection<String, User> {
     
     //TODO: this is extremely inefficient for large tables
     Future<List<User>> fetchUsers() {
-        String sql = "SELECT userid, firstname, lastname, role, email, isadmin FROM user";
+        String sql = "SELECT userid, firstname, lastname, role, email, isAdmin FROM user";
         return db.query(sql).then((Results results) {
             List users = [];
             return results.forEach((Row row) {

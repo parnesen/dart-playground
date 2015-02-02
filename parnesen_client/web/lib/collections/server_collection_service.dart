@@ -54,6 +54,7 @@ abstract class Collection<K, T> {
     }
     
     void open(CollectionResponder responder, OpenCollection request, String collectionName, Filter filter, int fetchUpTo);
+    void createValue(CollectionResponder responder, CreateValue request, T value);
     void createValues(CollectionResponder responder, CreateValues request, List<T> values);
     void readValues(CollectionResponder responder, ReadValues request, int startIndex, int count);
     void updateValues(CollectionResponder responder, UpdateValues request, List<T> values);
@@ -84,6 +85,9 @@ class CollectionResponder extends Responder {
                 this.filter = request.filter;
                 collection.open(this, request, request.collectionName, request.filter, request.fetchUpTo);
             }
+            else if (request is CreateValue) {
+                collection.createValue(this, request, request.value);
+            }
             else if (request is CreateValues) {
                 collection.createValues(this, request, request.values);
             }        
@@ -104,6 +108,7 @@ class CollectionResponder extends Responder {
             String errorMsg = "unexpected error handling request: $error";
             log.warning(errorMsg, error, stacktrace);
             sendFail(request, errorMsg: errorMsg);
+            print(stacktrace);
         }
     }
     

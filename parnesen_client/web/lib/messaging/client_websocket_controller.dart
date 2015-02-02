@@ -169,7 +169,6 @@
             
             webSocket.onOpen.first.then((_) {
                 if(client._goal == client.openState) {
-                    log.info("websocket open");
                     client._webSocket = webSocket;
                     webSocket.onClose.listen((CloseEvent closeEvent) => client.state._onWebSocketClosed(closeEvent));
                     webSocket.onError.listen((Event errorEvent)      => client.state._onWebSocketError (errorEvent));

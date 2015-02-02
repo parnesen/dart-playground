@@ -12,6 +12,8 @@ void registerCollectionMessages() {
         OpenCollectionSuccess.NAME  : (json) => new OpenCollectionSuccess.fromJson(json),
         //GenericFail
         
+        CreateValue.NAME            : (json) => new CreateValue.fromJson(json),
+        ValueCreated.NAME           : (json) => new ValueCreated.fromJson(json),
         CreateValues.NAME           : (json) => new CreateValues.fromJson(json),
         ReadValues.NAME             : (json) => new ReadValues.fromJson(json),
         UpdateValues.NAME           : (json) => new UpdateValues.fromJson(json),
@@ -159,6 +161,26 @@ class ValuesDeleted<K> extends Message {
         json['values'] = values;
     }
     List<K> get values => json['values'];
+}
+
+class CreateValue<T extends JsonObject> extends Request {
+    static const String NAME = "CreateValue";
+    final T value;
+    
+    CreateValue.fromJson(Map<String, dynamic> json) : super.fromJson(json), value = jsonToObj(json['value']);
+    CreateValue(T value) : super(name: NAME), value = value {
+        json['value'] = value.json;
+    }
+}
+
+class ValueCreated<T extends JsonObject> extends Result {
+    static const String NAME = "ValueCreated";
+    final T value;
+    
+    ValueCreated.fromJson(Map<String, dynamic> json) : super.fromJson(json), value = jsonToObj(json['value']);
+    ValueCreated(T value) : super(name: NAME), value = value {
+        json['value'] = value.json;
+    }
 }
 
 class CreateValues<T extends JsonObject> extends ValueListRequest<T> {
