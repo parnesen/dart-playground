@@ -33,9 +33,10 @@ class PostsPage extends PolymerElement {
     void submitPost() {
         posts.exchange.sendRequest(new CreateValue(new Post(postText)))
             .then((Result result) {
-                if(result.isFail) {
-                    throw result;
+                if(result is ValueCreated<Post>) {
+                    output = "Post Submitted: '${result.value.timestamp}'";
                 }
+                else { throw result; }
             })
             .catchError((error) {
                 String errorMsg = "Error Submitting Post: $error";

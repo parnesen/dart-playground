@@ -95,7 +95,7 @@ class PostCollection extends Collection<String, Post> {
         db.startTransaction()
             .then((Transaction transaction) => transaction.query(insertSql)
                 .then((_) => transaction.query(selectSql))
-                .then((Results results) => results.first)
+                .then((Results results) => results.last) //note use .last not .first or the commit fails because iterator still open
                 .then((Row row) {
                     int postId = row[0];
                     DateTime timestamp = row[1];

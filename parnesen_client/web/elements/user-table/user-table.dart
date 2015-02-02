@@ -1,4 +1,4 @@
-library playgroundNest;
+library user_table;
 
 import 'package:polymer/polymer.dart';
 import 'dart:html';
@@ -15,8 +15,7 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
     @observable String output = "";
     
     TableElement tableElement;
-    TableSectionElement get tc => tableElement.tBodies.single;
-    List<Element> get rows => tc.children;
+    List<Element> get rows => tableElement.tBodies.single.children;
     
     Exchange userExchange;
     

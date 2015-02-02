@@ -178,7 +178,7 @@ class ValueCreated<T extends JsonObject> extends Result {
     final T value;
     
     ValueCreated.fromJson(Map<String, dynamic> json) : super.fromJson(json), value = jsonToObj(json['value']);
-    ValueCreated(T value) : super(name: NAME), value = value {
+    ValueCreated(T value) : super(name: NAME, isSuccess: true), value = value {
         json['value'] = value.json;
     }
 }
