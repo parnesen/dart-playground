@@ -15,14 +15,14 @@ class ConnectionStatus extends PolymerElement {
     @observable State connectionState = webSocketController.state;
     @observable String result;
 
-    StreamSubscription<StateTransition> stateSubscription;
+    StreamSubscription stateSubscription;
 
     void attached() {
         super.attached();
         bool isEnterKey(KeyboardEvent event) => event.keyCode == KeyCode.ENTER;
 
-        stateSubscription = webSocketController.stateTransitions.listen((StateTransition transition) {
-            connectionState = transition.newState;
+        stateSubscription = webSocketController.stateTransitions.listen((_) {
+            connectionState = webSocketController.state;
         });
     }
 
@@ -32,7 +32,6 @@ class ConnectionStatus extends PolymerElement {
 
     void disconnect() {
         webSocketController.close().catchError((error) => result = "error while disconnecting: $error");
-        stateSubscription.cancel();
     }
 
     void detached() {
