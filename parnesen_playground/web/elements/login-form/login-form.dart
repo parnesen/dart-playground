@@ -17,6 +17,7 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
     @observable String output = "";
     
     CancelLoginFunction cancelLoginFunction;
+    DateTime prevSessionLogin;
     
     factory LoginForm(CancelLoginFunction cancelLoginFunction) {
         return new Element.tag('login-form') as LoginForm
@@ -33,7 +34,9 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
     }
     
     void updateLoginStatus() {
-        output = comms.isLoggedIn ? "logged in as ${comms.userId}" : "logged out";
+        String prevLogin = prevSessionLogin != null ? ", previous login was at ${prevSessionLogin}" : "";
+        output = comms.isLoggedIn ? "logged in as ${comms.userId}$prevLogin" : "logged out";
+        print(output);
         userId = comms.userId != null ? comms.userId : userId;
     }
     
@@ -52,7 +55,7 @@ class LoginForm extends PolymerElement { LoginForm.created() : super.created();
                         comms.userId = userId;
                         comms.isAdmin = result.isAdmin;
                         comms.isLoggedIn = true;
-                        updateLoginStatus();
+                        this.prevSessionLogin = result.lastLogin;
                     } else {
                         output = "login failed";
                     }

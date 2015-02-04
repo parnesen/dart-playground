@@ -20,19 +20,31 @@ class LoginHandler extends Responder {
     LoginHandler(CommsEndpoint endpoint, int exchangeId) : super(endpoint, exchangeId, requiresLogin: false) {
         requests.first.then((LoginRequest request) => authenticate(request));
     }
-    
+     
     void authenticate(LoginRequest request) {
-        db.query("SELECT u.isAdmin FROM user u WHERE u.userid = '${request.userId}' AND u.password = '${_saltedHash[request.hashedPassword]}'" )
-            .then((Results result) => result.single)
-            .then((Row row) {
-                endpoint.userId     = request.userId;
-                endpoint.isLoggedIn = true;
-                endpoint.isAdmin    = row[0] == 1;
-                sendResult(request, new LoginSuccess(endpoint.isAdmin));
-            })
-            .catchError((error) {
-                sendFail(request);
-            });
+        final String userId = request.userId;
+        db.startTransaction().then((Transaction transaction) {
+            String authenticateSql = "SELECT u.isAdmin, u.lastlogin FROM user u WHERE u.userid = '$userId' AND u.password = '${_saltedHash[request.hashedPassword]}'";
+            return transaction.query(authenticateSql)
+                .then((Results result) => result.single)
+                .then((Row userInfoRow) {
+                    String setLastLoginSql = "UPDATE user SET lastLogin='${new DateTime.now().toString()}' WHERE userid = '$userId'";
+                    print("sending $setLastLoginSql");
+                    return transaction.query(setLastLoginSql)
+                        .then((_) => transaction.commit())
+                        .then((_) {
+                            endpoint.userId     = userId;
+                            endpoint.isLoggedIn = true;
+                            endpoint.isAdmin    = userInfoRow[0] == 1;
+                            DateTime lastLogin = userInfoRow[1];
+                            sendResult(request, new LoginSuccess(endpoint.isAdmin, lastLogin));
+                        });
+                });
+        })
+        .catchError((error) {
+            print(error);
+            sendFail(request);
+        });        
     }
 }
 

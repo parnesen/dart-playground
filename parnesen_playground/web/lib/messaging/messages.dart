@@ -200,11 +200,13 @@ class LoginSuccess extends Result {
     static const String NAME = "LoginSuccess";
     LoginSuccess.fromJson(Map<String, dynamic> json) : super.fromJson(json);
      
-    LoginSuccess(bool isAdmin) : super(name : NAME) {
+    LoginSuccess(bool isAdmin, DateTime lastLogin) : super(name : NAME) {
         json['isAdmin'] = isAdmin;
+        json['lastLogin'] = lastLogin.toString();
     }
     
     bool get isAdmin => json['isAdmin'];
+    DateTime get lastLogin => DateTime.parse(json['lastLogin']);
 }
 
 /** sent by the server if the client attempts a [Request] before logging in */

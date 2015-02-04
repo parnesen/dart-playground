@@ -21,11 +21,13 @@ class CollectionService {
     CollectionService._create();
     
     static void init() {
-        CommsEndpoint.responderFactories[OpenCollection.NAME] = collectionService.openCollection;
+        CommsEndpoint.responderFactories[OpenCollection.NAME] = collectionService.onOpenCollectionRequest;
     }
     
-    Responder openCollection(CommsEndpoint endpoint, OpenCollection request) {
-        String collectionName = request.collectionName;
+    Responder onOpenCollectionRequest(CommsEndpoint endpoint, OpenCollection request) =>
+        openCollection(request.collectionName).newResponder(endpoint, request.exchangeId);
+    
+    Collection openCollection(String collectionName) {
         Collection collection = _openCollections[collectionName];
         if(collection == null) {
             CollectionFactory factory = collectionFactories[collectionName];
@@ -33,9 +35,7 @@ class CollectionService {
             collection = factory();
             _openCollections[collectionName] = collection;
         }
-        
-        Responder responder = collection.newResponder(endpoint, request.exchangeId);
-        return responder;
+        return collection;
     }
 }
 
