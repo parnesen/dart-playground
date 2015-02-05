@@ -64,7 +64,7 @@ void main() {
       
     connectDB();
     
-    HttpServer.bind(InternetAddress.LOOPBACK_IP_V4, port).then((server) {
+    HttpServer.bind(InternetAddress.ANY_IP_V4, port).then((server) {
       log.info("Websocket server is running on "
                "'http://${server.address.address}:$port/'");
       var router = new Router(server);
