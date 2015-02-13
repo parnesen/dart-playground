@@ -8,7 +8,7 @@ bool isSet(String str) => str != null && str.trim().isNotEmpty;
 final Map<String, String> config = {};
 
 
-String checkIsSet(String str, {String message}) {
+String checkNotEmpty(String str, {String message}) {
     checkState(isSet(str), message: message);
     return str;
 }
@@ -18,6 +18,12 @@ class Nullable { const Nullable(); }
 
 const NonNull nonNull = const NonNull();
 class NonNull { const NonNull(); }
+
+
+/** a mixin for classes that have keys **/
+abstract class KeyedValue<K> {
+    K get key;
+}
 
 String toCommaSeperatedString(final List values, {bool useQuotes : false, String stringify(dynamic value)}) {
     var toString = stringify != null ? stringify : (dynamic value) => value == null ? 'null' : value.toString();

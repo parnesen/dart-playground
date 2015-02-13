@@ -10,5 +10,3 @@ import '../initializable.dart';
 
 part 'messages.dart';
 part 'comms_endpoint.dart';
-
-

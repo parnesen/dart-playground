@@ -5,6 +5,7 @@ import 'package:route_hierarchical/client.dart';
 import 'dart:html';
 import 'package:quiver/check.dart';
 import 'package:logging/logging.dart' show Logger;
+import 'dart:collection';
 
 typedef void RouteFunction(RouteEvent);
 
@@ -41,9 +42,9 @@ class Route {
     static final Route posts = new Route._create(
             "posts", 
             "/playground/posts", 
-            (RouteEvent) => _showElement(new Element.tag('post-page')));        
+            (RouteEvent) => _showElement(new Element.tag('post-page')));      
     
-    static final List<Route> all = [home, counter, nest, users, posts];
+    static final UnmodifiableListView<Route> all = new UnmodifiableListView([home, counter, nest, users, posts]);
     
     String name, path;
     bool isDefault;

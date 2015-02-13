@@ -4,7 +4,7 @@ import 'dart:async';
 import 'user_messages.dart';
 import '../../collections/server_collection_service.dart';
 import '../../collections/collection_messages.dart';
-import '../../../../lib/db_connection.dart';
+import '../../db_connection.dart';
 import 'package:sqljocky/sqljocky.dart';
 import 'dart:math';
 import '../../util.dart';

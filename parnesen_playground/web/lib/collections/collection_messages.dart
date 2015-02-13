@@ -75,7 +75,7 @@ class OpenCollectionSuccess extends Result {
     int get collectionSize => json['collectionSize'];
 }
 
-abstract class ValueListRequest<T extends JsonObject> extends Request {
+abstract class ValueListRequest<T extends KeyedJsonObject> extends Request {
     final List<T> values;
     
     ValueListRequest.fromJson(Map<String, dynamic> json) 
@@ -127,7 +127,7 @@ class ReadValues extends Request {
     int get count => json['count'];
 }
 
-class ReadResult<T extends JsonObject> extends ValueListResult<T> {
+class ReadResult<T extends KeyedJsonObject> extends ValueListResult<T> {
     static const String NAME = "ReadResult";
     ReadResult.fromJson(Map<String, dynamic> json)  :  super.fromJson(json);
     
@@ -139,14 +139,14 @@ class ReadResult<T extends JsonObject> extends ValueListResult<T> {
     List<T> get values => super.values;
 }
 
-class ValuesCreated<T extends JsonObject> extends ValueListOperation<T> {
+class ValuesCreated<T extends KeyedJsonObject> extends ValueListOperation<T> {
     static const String NAME = "ValuesCreated";
     ValuesCreated.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     ValuesCreated(List<T> values) : super(NAME, values);
     List<T> get values => super.values;
 }
 
-class ValuesUpdated<T extends JsonObject> extends ValueListOperation<T> {
+class ValuesUpdated<T extends KeyedJsonObject> extends ValueListOperation<T> {
     static const String NAME = "ValuesUpdated";
     ValuesUpdated.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     ValuesUpdated(List<T> values) : super(NAME, values);
@@ -156,13 +156,13 @@ class ValuesUpdated<T extends JsonObject> extends ValueListOperation<T> {
 class ValuesDeleted<K> extends Message {
     static const String NAME = "ValuesDeleted";
     ValuesDeleted.fromJson(Map<String, dynamic> json) : super.fromJson(json);
-    ValuesDeleted(List<K> values) : super(name : NAME) {
-        json['values'] = values;
+    ValuesDeleted(List<K> keys) : super(name : NAME) {
+        json['keys'] = keys;
     }
-    List<K> get values => json['values'];
+    List<K> get keys => json['keys'];
 }
 
-class CreateValue<T extends JsonObject> extends Request {
+class CreateValue<T extends KeyedJsonObject> extends Request {
     static const String NAME = "CreateValue";
     final T value;
     
@@ -172,7 +172,7 @@ class CreateValue<T extends JsonObject> extends Request {
     }
 }
 
-class ValueCreated<T extends JsonObject> extends Result {
+class ValueCreated<T extends KeyedJsonObject> extends Result {
     static const String NAME = "ValueCreated";
     final T value;
     
@@ -182,14 +182,14 @@ class ValueCreated<T extends JsonObject> extends Result {
     }
 }
 
-class CreateValues<T extends JsonObject> extends ValueListRequest<T> {
+class CreateValues<T extends KeyedJsonObject> extends ValueListRequest<T> {
     static const String NAME = "CreateValues";
     CreateValues.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     CreateValues(List<T> values) : super(NAME, values);
     List<T> get values => super.values;
 }
 
-class UpdateValues<T extends JsonObject> extends ValueListRequest<T> {
+class UpdateValues<T extends KeyedJsonObject> extends ValueListRequest<T> {
     static const String NAME = "UpdateValues";
     UpdateValues.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     UpdateValues(List<T> values) : super(NAME, values);

@@ -8,7 +8,7 @@ JsonObject jsonToObj(Map<String, dynamic> json) {
     String name = json["name"];
     checkState(name != null || name.isEmpty, message : "message is missing its name field");
     jsonObjectFactory factory = JsonObject.factories[name];
-    checkState(factory != null, message : "Missing factory for message $name");
+    checkState(factory != null, message : "Missing factory for JsonObject $name");
     JsonObject obj = factory(json);
     return obj;
 }
@@ -38,6 +38,12 @@ abstract class JsonObject {
     JsonObject(String name) : this.fromJson({
         'name' : checkNotNull(name)
     });
+}
+
+abstract class KeyedJsonObject<K> extends JsonObject with KeyedValue<K> {
+    KeyedJsonObject.fromJson(Map<String, dynamic> json) : super.fromJson(json);
+    KeyedJsonObject(String name) : super(name);
+    K get key;
 }
 
 /** A message sent by an [Exchange] via a [CommsEndpoint] **/
@@ -182,7 +188,7 @@ class LoginRequest extends Request {
     
     LoginRequest(String userId, String password) : super(name : NAME) {
         json['userId']   = checkNotNull(userId);
-        json['hashedPassword'] = sha1Hash[checkIsSet(password)];
+        json['hashedPassword'] = sha1Hash[checkNotEmpty(password)];
     }
     
     String get userId => json['userId'];

@@ -39,7 +39,7 @@ class CollectionService {
     }
 }
 
-abstract class Collection<K, T> {
+abstract class Collection<K, V extends KeyedJsonObject<K>> {
     
     final String collectionName;
     final Set<CollectionResponder> responders = new Set();
@@ -49,21 +49,25 @@ abstract class Collection<K, T> {
     CollectionResponder newResponder(CommsEndpoint endpoint, int exchangeId) {
         CollectionResponder responder = new CollectionResponder(this, endpoint, exchangeId);
         responders.add(responder);
-        responder.onClose.then((_) => responders.remove(responder));
+        responder.onClose.then(onResponderClosed);
         return responder;
     }
     
     void open(CollectionResponder responder, OpenCollection request, String collectionName, Filter filter, int fetchUpTo);
-    void createValue(CollectionResponder responder, CreateValue request, T value);
-    void createValues(CollectionResponder responder, CreateValues request, List<T> values);
+    void createValue(CollectionResponder responder, CreateValue request, V value);
+    void createValues(CollectionResponder responder, CreateValues request, List<V> values);
     void readValues(CollectionResponder responder, ReadValues request, int startIndex, int count);
-    void updateValues(CollectionResponder responder, UpdateValues request, List<T> values);
+    void updateValues(CollectionResponder responder, UpdateValues request, List<V> values);
     void deleteValues(CollectionResponder responder, DeleteValues request, List<K> ids);
     
     void broadcast(Message message) {
         responders.forEach((responder) {
             responder.send(message);
         });
+    }
+    
+    void onResponderClosed(Responder responder) {
+        responders.remove(responder);
     }
 }
 

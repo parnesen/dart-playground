@@ -1,3 +1,5 @@
+library index;
+
 import 'package:logging/logging.dart' show Logger, Level, LogRecord;
 import "package:polymer/polymer.dart";
 import 'lib/messaging/client_websocket_controller.dart';

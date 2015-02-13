@@ -1,6 +1,6 @@
 library login_responder;
 
-import '../../../../lib/db_connection.dart';
+import '../../db_connection.dart';
 import '../../messaging/messaging.dart';
 import '../../util.dart';
 import '../../sha1_hash.dart';

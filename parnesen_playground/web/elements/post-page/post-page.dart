@@ -41,7 +41,7 @@ class PostsPage extends PolymerElement {
             users.all.forEach((user) => createTile(user));
         });
         
-        newUserSubscription = users.newValues.listen(createTile);
+        newUserSubscription = users.createEvents.listen(createTile);
     }
     
     void detached() {

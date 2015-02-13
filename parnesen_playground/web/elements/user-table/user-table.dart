@@ -33,7 +33,7 @@ class UserTable extends PolymerElement { UserTable.created() : super.created();
             if      (message is ReadResult)    { onReadResult(message.startIndex, message.values); }
             else if (message is ValuesCreated) { usersCreated(message.values); }
             else if (message is ValuesUpdated) { usersUpdated(message.values); }
-            else if (message is ValuesDeleted) { usersDeleted(new Set.from(message.values)); }
+            else if (message is ValuesDeleted) { usersDeleted(new Set.from(message.keys)); }
         });
         
         webSocketController.open();

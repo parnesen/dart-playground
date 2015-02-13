@@ -3,7 +3,7 @@ library post_collection;
 import 'dart:async';
 import '../../collections/server_collection_service.dart';
 import '../../collections/collection_messages.dart';
-import '../../../../lib/db_connection.dart';
+import '../../db_connection.dart';
 import 'package:sqljocky/sqljocky.dart';
 import 'dart:math';
 import '../../util.dart';
@@ -14,7 +14,7 @@ final Logger log = new Logger('postCollectionName');
 
 //TODO: move all the client-server IO into the CollectionResponder including broadcasting, 
 //and make the crud methods know nothing of the Responder and just focus on the DB work. 
-class PostCollection extends Collection<String, Post> {
+class PostCollection extends Collection<int, Post> {
     
     static void init() {
         CollectionService.collectionFactories[postCollectionName] = () => new PostCollection();
@@ -120,7 +120,7 @@ class PostCollection extends Collection<String, Post> {
         throw "updateValues not implemented";
     }
     
-    void deleteValues(CollectionResponder responder, DeleteValues request, List<String> postIds) {        
+    void deleteValues(CollectionResponder responder, DeleteValues request, List<int> postIds) {        
         String commaSerparatedPostIds = toCommaSeperatedString(postIds);
         
         String sql = "DELETE FROM post WHERE postid in ($commaSerparatedPostIds)";

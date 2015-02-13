@@ -11,7 +11,7 @@ import '../web/lib/messaging/messaging.dart';
 import '../web/lib/app/posts/post_messages.dart';
 import '../web/lib/app/users/user_messages.dart';
 import '../web/lib/app/posts/post_collection.dart';
-import '../lib/db_connection.dart';
+import '../web/lib/db_connection.dart';
 import '../web/lib/app/users/login_responder.dart';
 import '../web/lib/collections/server_collection_service.dart';
 import '../web/lib/app/users/user_collection.dart';
@@ -37,6 +37,7 @@ void handleWebSocket(WebSocket webSocket) {
     webSocket.listen(endpoint.receive, onError: (error) => log.warning('Bad WebSocket request: $error'));
     webSocket.done.then((val) { 
         log.info("websocket closed: $val");
+        endpoint.dispose();
     });
 }
 

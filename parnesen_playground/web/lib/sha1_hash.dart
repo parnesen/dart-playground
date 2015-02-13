@@ -17,7 +17,7 @@ class Sha1Hash {
     Sha1Hash({String salt}) : _salt = salt;
     
     String operator[](String value) {
-        checkIsSet(value);
+        checkNotEmpty(value);
         SHA1 hash = new SHA1();
         hash.add(new Utf8Encoder().convert(_salt != null ? "$_salt$value" : value));
         String hashed = CryptoUtils.bytesToHex(hash.close());

@@ -10,5 +10,5 @@ class ClientPostService extends ClientCollectionService<int, Post> {
     ClientPostService() : super(postCollectionName);
     
     Iterable<Post> from(String userId)       => all.where(      (Post post) => post.userId == userId);
-    Stream<Post> newPostsFrom(String userId) => newValues.where( (Post post) => post.userId == userId);
+    Stream<Post> newPostsFrom(String userId) => createEvents.where( (Post post) => post.userId == userId);
 }

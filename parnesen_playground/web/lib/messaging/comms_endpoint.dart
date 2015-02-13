@@ -115,6 +115,18 @@ class CommsEndpoint extends Initializable<CommsEndpoint> {
             log.warning("Error handling message $message", error, stacktrace);
         }
     }
+    
+    void dispose() {
+        List<Exchange> exchanges = new List.from(_exchanges.values);
+        try {
+            exchanges.forEach((Exchange exchange) => exchange.dispose());
+        }
+        catch(error) {
+            log.warning("error disposing exchange: $error");
+        }
+        
+        _exchanges.clear();
+    }
 
     void _forwardMessageToExchange(final Message message) {
         

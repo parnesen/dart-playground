@@ -14,7 +14,7 @@ void registerUserMessages() {
     });
 }
 
-class User extends JsonObject {
+class User extends KeyedJsonObject<String> {
     static const String NAME = "User";
     User.fromJson(Map<String, dynamic> json) : super.fromJson(json);
     
@@ -29,10 +29,10 @@ class User extends JsonObject {
                 bool isAdmin
             }) : super(NAME) {
         
-        json['userId']      = checkIsSet(userId, message: "userId is missing");
-        json['firstName']   = checkIsSet(firstName, message: "firstName is missing");
-        json['lastName']    = checkIsSet(lastName, message: "lastName is missing");
-        json['role']        = checkIsSet(role, message: "'role' is missing");
+        json['userId']      = checkNotEmpty(userId, message: "userId is missing");
+        json['firstName']   = checkNotEmpty(firstName, message: "firstName is missing");
+        json['lastName']    = checkNotEmpty(lastName, message: "lastName is missing");
+        json['role']        = checkNotEmpty(role, message: "'role' is missing");
         json['email']       = checkIsEmail(email);
         
         checkState(!(isSet(hashedPassword) && isSet(unhashedPassword)));
@@ -42,6 +42,7 @@ class User extends JsonObject {
         if(isAdmin != null) { json['isAdmin'] = isAdmin; }
     }
     
+    String get key          => userId;
     String get userId       => json['userId'];
     String get firstName    => json['firstName'];
     String get lastName     => json['lastName'];
